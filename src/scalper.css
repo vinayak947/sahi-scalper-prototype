@@ -186,6 +186,10 @@ canvas#chart{position:absolute;inset:0;width:100%;height:100%}
 .tab .info{font-size:16px}
 .addtab{width:32px;height:32px;border-radius:var(--r-full);background:var(--surface-L3);display:grid;place-items:center;align-self:center;font-size:18px;flex:none}
 .bb-row{display:flex;align-items:center;justify-content:space-between;padding:var(--sp-12) var(--sp-16) var(--sp-4)}
+#bbRow .bb-r{display:flex;align-items:center;gap:var(--sp-8)}
+#bbRow .seg button{width:36px;height:28px;padding:0;display:flex;align-items:center;justify-content:center}
+#bbRow .seg .i{font-size:16px;line-height:16px}
+#bbRow .seg button:focus-visible{outline-offset:-2px}
 .bbtog{display:flex;padding:2px;border-radius:var(--r-full);background:var(--surface-L3)}
 .bbtog button{height:30px;border-radius:var(--r-full);padding:0 var(--sp-12);display:flex;align-items:center;gap:6px;color:var(--text-secondary)}
 .bbtog button .lbl{display:none}

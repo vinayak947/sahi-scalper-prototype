@@ -67,9 +67,11 @@ function curItems(){
   return [...LISTS[st.list].items];
 }
 function sorted(items){const a=[...items], by={ltpd:k=>-S[k][1],ltpa:k=>S[k][1],chd:k=>-S[k][2]/S[k][1],cha:k=>S[k][2]/S[k][1]}[st.sort]; return by?a.sort((x,y)=>by(x)-by(y)):a}
+const sw={view:"list"}; // list / chart / table: the same three views as the full Stocks on the move page
 function renderSwitch(){
   $$("#srcChips .schip").forEach(c=>{const on=c.dataset.src===st.src; c.classList.toggle("on",on); const ck=c.querySelector(".ck"); if(on&&!ck) c.insertAdjacentHTML("beforeend",'<i class="i ck" style="font-size:16px">&#xe029;</i>'); if(!on&&ck) ck.remove();});
-  tabsEl.hidden=st.src==="hold"; $("#bbRow").hidden=st.src!=="scan";
+  tabsEl.hidden=st.src==="hold"; $("#bbTog").hidden=$("#btnFilter").hidden=st.src!=="scan"; // view switcher stays for every source; Bullish/Bearish + filter are scanner-only
+  $$("#swView button").forEach(b=>b.classList.toggle("on",b.dataset.v===sw.view)); placeThumb($("#swView"));
   if(st.src==="scan"){
     tabsEl.innerHTML=Object.entries(SCAN).map(([k,v])=>`<button class="tab${k===st.scan?" on":""}" data-k="${k}">${v.name}${k===st.scan?'<i class="i info" data-info="'+k+'">&#xe065;</i>':""}</button>`).join("");
   } else if(st.src==="lists"){
@@ -83,12 +85,16 @@ function renderSwitch(){
   $$("#bbTog button").forEach(b=>b.classList.toggle("on",b.dataset.d===st.dir));
   const items=sorted(curItems());
   if(!items.length){listEl.innerHTML=`<div class="empty"><span class="bmb">Your watchlist is empty</span><span class="bs sec">Add Stocks, ETFs or F&amp;O you want to track.</span></div>`;return}
-  listEl.innerHTML=items.map(k=>{const [n,l,c]=S[k], h=st.src==="hold"?HOLD[k]:null;
+  const cls=k=>S[k][2]>=0?"pos":"neg";
+  listEl.innerHTML=sw.view==="chart"?items.map(k=>{const [n,l]=S[k]; return `<div class="sa-card press" role="button" tabindex="0" data-sym="${k}"><span class="hd"><span class="bm">${n}</span><span class="tags"><span class="bxx tf">5m</span></span></span><span class="bm num"><span data-px="${k}">${fmt(l)}</span> <span class="bs ${cls(k)}" data-ch="${k}">${chgTxt(k)}</span> <span class="bs sec">today</span></span>${renderSC.chart(k,340,170,1)}${renderSC.xAxis(["Nov","11:15","13:15","15:15"])}</div>`}).join("")
+   :sw.view==="table"?`<div style="overflow-x:auto"><table class="sa-tbl bm"><tr class="bs"><th>Instrument</th><th>LTP</th><th>Change</th><th>Change %</th></tr>${items.map(k=>`<tr data-sym="${k}"><td>${k}</td><td class="num" data-px="${k}">${fmt(S[k][1])}</td><td class="num ${cls(k)}" data-ch="${k}" data-cf="abs">${sign(S[k][2])}</td><td class="num ${cls(k)}" data-ch="${k}" data-cf="pct">${S[k][2]<0?"-":"+"}${pct(k).toFixed(2)}%</td></tr>`).join("")}</table></div>`
+   :items.map(k=>{const [n,l,c]=S[k], h=st.src==="hold"?HOLD[k]:null;
     return `<button class="row" data-sym="${k}"><span class="l"><span class="bm">${n}${k==="ADANIENT"?'<i class="i" style="font-size:14px">&#xe000;</i>':""}</span><span class="bs ter">NSE${h?' <span style="color:var(--text-tertiary)">•</span> <span class="num">'+h.qty+'</span>':""}</span></span><span class="r"><span class="bmb num" data-px="${k}">${fmt(l)}</span><span class="bs num ${c>=0?"pos":"neg"}" data-ch="${k}">${sign(c)} (${pct(k).toFixed(2)}%)</span></span></button>`}).join("");
-  listEl.querySelectorAll(".row").forEach(r=>r.onclick=()=>{st.group=items; hideSheet("switch",()=>enterScalper(r.dataset.sym))});
+  listEl.querySelectorAll("[data-sym]").forEach(r=>r.onclick=()=>{st.group=items; hideSheet("switch",()=>enterScalper(r.dataset.sym))});
 }
 $$("#srcChips .schip").forEach(c=>c.onclick=()=>{st.src=c.dataset.src; $("#pvbTip").hidden=true; renderSwitch()});
 $$("#bbTog button").forEach(b=>b.onclick=()=>{st.dir=b.dataset.d; renderSwitch()});
+bindSeg($("#swView"),v=>{sw.view=v; renderSwitch()});
 $("#tipX").onclick=()=>$("#pvbTip").hidden=true;
 
 // filter & sort
@@ -142,8 +148,8 @@ $("#btnClose").onclick=()=>{stopNudge(); $("#scalper").hidden=true; $(scBack).hi
   if(scBack==="#scanAll"){renderSC.popFrom(); renderSC.syncFromScalper(); const r=$(`#saBody [data-sym="${st.sym}"]`); r&&r.scrollIntoView({block:"nearest"})}
   scBack="#home"};
 // One "Stocks on the move" screen: the list icon on the chart opens the same full page as Trade → Stock Scalper (no separate bottom sheet).
-// Back on that page returns to this chart (the page remembers which screen opened it).
-$("#btnList").onclick=()=>{stopNudge(); renderSC.syncFromScalper(); renderSC.openAll("scalper"); scBack="#scanAll"; const r=$(`#saBody [data-sym="${st.sym}"]`); r&&r.scrollIntoView({block:"nearest"})};
+// The list icon on the chart opens the Stocks on the move bottom sheet (My Lists · scanners · Holdings) with the list / chart / table views.
+$("#btnList").onclick=()=>{renderSwitch();showSheet("switch")};
 
 // ---------- stock strip: slide through the list without leaving the chart ----------
 // The strip snaps the centred chip. While a finger drags it, the chip under the centre lights up with a light haptic tick;
@@ -471,7 +477,7 @@ initLive({$$,books:[S,IDX],fmt,onTick(moved){
 
 // boot: open on Home; #scalper / #scanner jump straight in
 function boot(){const h=location.hash.slice(1);
-  if(h.startsWith("scalper")){st.group=[...SCAN[st.scan][st.dir]]; enterScalper(st.group[0])} else if(h.startsWith("scanner")) renderSC.openAll("scalper"); else if(h.startsWith("stocks")) renderSC.openAll("scalper"); else if(h.startsWith("watchlist")) WLP.open()}
+  if(h.startsWith("scalper")){st.group=[...SCAN[st.scan][st.dir]]; enterScalper(st.group[0])} else if(h.startsWith("scanner")){renderSwitch(); showSheet("switch")} else if(h.startsWith("stocks")) renderSC.openAll("scalper"); else if(h.startsWith("watchlist")) WLP.open()}
 $("#demoTime").onchange=e=>setDemo(e.target.value);
 setDemo($("#demoTime").value);
 document.fonts.ready.then(()=>{$$(".seg").forEach(placeThumb); draw()});

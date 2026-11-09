@@ -179,8 +179,11 @@
     </div>
     <div class="tabs bm" id="swTabs"></div>
     <div class="bb-row" id="bbRow">
-      <div class="bbtog bm" id="bbTog"><button class="on" data-d="bull"><span class="lbl">Bullish</span><i class="i up">&#xe36d;</i></button><button data-d="bear"><span class="lbl">Bearish</span><i class="i dn">&#xe36c;</i></button></div>
-      <button class="fbtn press" id="btnFilter" aria-label="Filter"><i class="i">&#xe1df;</i><span class="dot" id="fDot" hidden></span></button>
+      <div class="seg subtle" id="swView" role="radiogroup" aria-label="View"><span class="thumb"></span><button class="on" data-v="list" aria-label="List view"><i class="i">&#xe07b;</i></button><button data-v="chart" aria-label="Chart view"><i class="i">&#xe107;</i></button><button data-v="table" aria-label="Table view"><i class="i">&#xe072;</i></button></div>
+      <div class="bb-r">
+        <div class="bbtog bm" id="bbTog"><button class="on" data-d="bull"><span class="lbl">Bullish</span><i class="i up">&#xe36d;</i></button><button data-d="bear"><span class="lbl">Bearish</span><i class="i dn">&#xe36c;</i></button></div>
+        <button class="fbtn press" id="btnFilter" aria-label="Filter"><i class="i">&#xe1df;</i><span class="dot" id="fDot" hidden></span></button>
+      </div>
     </div>
     <div class="list" id="swList"></div>
     <div class="tip bm" id="pvbTip" hidden style="left:24px;right:24px;top:150px"><div>Stocks up 2.5% or more intraday with the volume, VWAP, range position and 15-minute trend already behind the move.<br><br>Sorted by intraday change, biggest gainers first.</div><button class="x" id="tipX" aria-label="Close"><i class="i">&#xe103;</i></button></div>
