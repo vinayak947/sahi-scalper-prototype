@@ -349,3 +349,9 @@ canvas#chart{position:absolute;inset:0;width:100%;height:100%}
 .demo{display:flex;align-items:center;gap:var(--sp-8);width:100%;justify-content:space-between}
 .demo select{font:400 14px/16.8px var(--sans);color:var(--text-primary);background:var(--surface-L1);border:var(--bw-hair) solid var(--border-L1);border-radius:var(--r-full);height:32px;padding:0 var(--sp-12)}
 .sc-card:has(.wl:active),.sa-card:has(.wl:active){transform:none}
+
+/* Live price tick (live.js): the LTP flashes green / red and fades back to its own colour. Colour only, no movement. */
+.tk-up:not(text){animation:tk-up 700ms var(--ease-out)}
+.tk-dn:not(text){animation:tk-dn 700ms var(--ease-out)}
+@keyframes tk-up{from{color:var(--text-positive)}}
+@keyframes tk-dn{from{color:var(--text-negative)}}

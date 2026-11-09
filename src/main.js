@@ -3,6 +3,7 @@ import './scalper.css'
 import {initScanners} from './scanners.js'
 import {initFb2} from './fb2.js'
 import {initWatchlist} from './watchlist.js'
+import {initLive} from './live.js'
 import {resolve} from './eligibility.js'
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -83,7 +84,7 @@ function renderSwitch(){
   const items=sorted(curItems());
   if(!items.length){listEl.innerHTML=`<div class="empty"><span class="bmb">Your watchlist is empty</span><span class="bs sec">Add Stocks, ETFs or F&amp;O you want to track.</span></div>`;return}
   listEl.innerHTML=items.map(k=>{const [n,l,c]=S[k], h=st.src==="hold"?HOLD[k]:null;
-    return `<button class="row" data-sym="${k}"><span class="l"><span class="bm">${n}${k==="ADANIENT"?'<i class="i" style="font-size:14px">&#xe000;</i>':""}</span><span class="bs ter">NSE${h?' <span style="color:var(--text-tertiary)">•</span> <span class="num">'+h.qty+'</span>':""}</span></span><span class="r"><span class="bmb num">${fmt(l)}</span><span class="bs num ${c>=0?"pos":"neg"}">${sign(c)} (${pct(k).toFixed(2)}%)</span></span></button>`}).join("");
+    return `<button class="row" data-sym="${k}"><span class="l"><span class="bm">${n}${k==="ADANIENT"?'<i class="i" style="font-size:14px">&#xe000;</i>':""}</span><span class="bs ter">NSE${h?' <span style="color:var(--text-tertiary)">•</span> <span class="num">'+h.qty+'</span>':""}</span></span><span class="r"><span class="bmb num" data-px="${k}">${fmt(l)}</span><span class="bs num ${c>=0?"pos":"neg"}" data-ch="${k}">${sign(c)} (${pct(k).toFixed(2)}%)</span></span></button>`}).join("");
   listEl.querySelectorAll(".row").forEach(r=>r.onclick=()=>{st.group=items; hideSheet("switch",()=>enterScalper(r.dataset.sym))});
 }
 $$("#srcChips .schip").forEach(c=>c.onclick=()=>{st.src=c.dataset.src; $("#pvbTip").hidden=true; renderSwitch()});
@@ -152,7 +153,7 @@ function renderPills(force){
   const key=st.group.join();
   if(force||key!==pillKey){
     pillKey=key;
-    track.innerHTML=st.group.map(k=>{const c=S[k][2];return `<button class="pill press" role="option" data-sym="${k}"><span class="bs">${k}</span><span class="bx num ch ${c>=0?"pos":"neg"}">${c>=0?"+":"\u2212"}${pct(k).toFixed(2)}%</span></button>`}).join("");
+    track.innerHTML=st.group.map(k=>{const c=S[k][2];return `<button class="pill press" role="option" data-sym="${k}"><span class="bs">${k}</span><span class="bx num ch ${c>=0?"pos":"neg"}" data-ch="${k}" data-cf="pill">${c>=0?"+":"\u2212"}${pct(k).toFixed(2)}%</span></button>`}).join("");
     track.querySelectorAll(".pill").forEach(p=>p.onclick=()=>{userScroll=false; loadSymbol(p.dataset.sym)});
     const ps=track.querySelectorAll(".pill"); if(ps.length){ // padding so the first and last chip can sit in the centre
       track.style.paddingLeft=Math.max(0,(pillsEl.clientWidth-ps[0].offsetWidth)/2)+"px";
@@ -231,8 +232,8 @@ function makeCandles(k){
 function loadSymbol(k){
   const from=st.group.indexOf(st.sym), to=st.group.indexOf(k), dir=st.sym===k||from<0||to<0?0:Math.sign(to-from);
   st.sym=k; st.limit=null; st.holdView=false; st.prod=st.prodPref; const [n,l,c]=S[k];
-  $("#symName").textContent=n; $("#symLtp").textContent=fmt(l);
-  const ch=$("#symChg"); ch.textContent=chgTxt(k); ch.className="bs num "+(c>=0?"pos":"neg");
+  $("#symName").textContent=n; $("#symLtp").textContent=fmt(l); $("#symLtp").dataset.px=k;
+  const ch=$("#symChg"); ch.textContent=chgTxt(k); ch.className="bs num "+(c>=0?"pos":"neg"); ch.dataset.ch=k;
   const h=HOLD[k]; $("#holdChip").hidden=!h; if(h) $("#holdTxt").textContent=h.qty+" Holding";
   $("#ann").hidden=true; $("#resetBtn").hidden=true;
   candles=makeCandles(k); const tv=candles.reduce((a,b)=>a+b.v,0); $("#volTxt").textContent=(tv/1e5).toFixed(1)+"L";
@@ -398,7 +399,7 @@ function productTick(force){
 // ---------- order form ----------
 const of={sym:null,side:"buy",prod:"mis",qty:1,type:"mkt"};
 function openForm(){Object.assign(of,{sym:st.sym,prod:curProd(st.prod)?.k??st.prod,qty:st.qty,side:"buy",type:"mkt"});
-  const [n,l,c]=S[of.sym]; $("#ofName").textContent=n; $("#ofLtp").textContent=fmt(l); const ch=$("#ofChg"); ch.textContent=chgTxt(of.sym); ch.className="num "+(c>=0?"pos":"neg");
+  const [n,l,c]=S[of.sym]; $("#ofName").textContent=n; $("#ofLtp").textContent=fmt(l); $("#ofLtp").dataset.px=of.sym; const ch=$("#ofChg"); ch.textContent=chgTxt(of.sym); ch.className="num "+(c>=0?"pos":"neg"); ch.dataset.ch=of.sym;
   $("#ofQty").value=of.qty; ["#ofSide","#ofType"].forEach((s,i)=>$$(s+" button").forEach(b=>b.classList.toggle("on",b.dataset.v===(i?of.type:of.side))));
   renderForm(); showSheet("form")}
 function renderForm(){
@@ -453,6 +454,18 @@ const renderSC=initScanners({$,$$,S,SCAN,st,fmt,sign,pct,chgTxt,sorted,bindSeg,p
 const WLP=initWatchlist({$,$$,S,LISTS,fmt,sign,showSheet,hideSheet,toast,bindSeg,placeThumb,enterScalper,st,
   setBack:s=>{scBack=s;$(s).hidden=true}, chart:renderSC.chart, xAxis:renderSC.xAxis});
 $("#navWatch").onclick=()=>WLP.open();
+
+// ---------- live prices (live.js): every price on every screen ticks; the scalper's last candle moves with it ----------
+const IDX={NIFTY50:["NIFTY50",25003.65,17.25],SENSEX:["SENSEX",81064.68,65.28],BANKNIFTY:["BANKNIFTY",59632.20,781.55]};
+let bucket=Math.floor(Date.now()/3e5); // 5-minute candle the chart is on
+initLive({$$,books:[S,IDX],fmt,onTick(moved){
+  if($("#scalper").hidden||!candles.length) return;
+  const b=Math.floor(Date.now()/3e5), l=S[st.sym][1];
+  if(b!==bucket){bucket=b; const c=candles[candles.length-1].c; candles.push({o:c,h:c,l:c,c,v:0}); candles.shift()} // a new 5-min candle opens
+  if(!moved.includes(st.sym)) return;
+  const last=candles[candles.length-1]; last.c=l; last.h=Math.max(last.h,l); last.l=Math.min(last.l,l); last.v+=Math.round((0.02+Math.random()*0.08)*1e5*(l<50?6:1));
+  updateOrder(); draw();
+}});
 
 // boot: open on Home; #scalper / #scanner jump straight in
 function boot(){const h=location.hash.slice(1);
