@@ -160,6 +160,11 @@ canvas#chart{position:absolute;inset:0;width:100%;height:100%}
 .seg.subtle .thumb{background:var(--surface-L1);box-shadow:0 0 0 var(--bw-hair) var(--border-L1)}
 .seg.subtle button{color:var(--text-secondary)} .seg.subtle button.on{color:var(--text-primary)}
 .op-main{flex:1;display:flex;justify-content:center}
+/* DlsSegmentSwitcher size .small (DLS Playground): track 33, pill 29, inset 2, segment padding 12 h, label sRegular → sBold when selected */
+.seg.sm button{height:29px;padding:0 var(--sp-12);white-space:nowrap}
+.seg.sm button.on{font-weight:500}
+.seg.sm button[data-l]{display:inline-grid;align-content:center}
+.seg.sm button[data-l]::after{content:attr(data-l);font-weight:500;visibility:hidden;height:0;line-height:0} /* reserves the bold width */
 .op-row2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--sp-8);align-items:start}
 .bs-btn{height:48px;border-radius:var(--r-full);color:var(--text-inverse-primary);display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%}
 .bs-btn.buy{background:var(--surface-positive-default)} .bs-btn.sell{background:var(--surface-negative-default)}
