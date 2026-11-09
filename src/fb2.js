@@ -51,18 +51,26 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
     $('#fbInLbl').textContent = fb.input === 'amt' ? 'Trade value' : 'Quantity'
     if (document.activeElement !== inEl) inEl.value = fb.input === 'amt' ? inr(fb.amt) : st.qty.toLocaleString('en-IN')
     inEl.setAttribute('aria-label', fb.input === 'amt' ? 'Amount in rupees' : 'Quantity')
+    inEl.readOnly = fb.input === 'amt' // typed in the "Enter trade value" sheet, not in the narrow bar
+    $('.fb-step').classList.toggle('amt', fb.input === 'amt') // amount mode: just the value, no − / + steppers
+    inEl.style.fontSize = inEl.value.length > 9 ? '12px' : '' // crore-sized amounts still fit the bar
     const s = $('#fbSum'), short = c.q < 1, levTx = c.L > 1 ? ` · ${c.L}x` : '' // leverage reads inline with the margin, no separate pill
     s.classList.toggle('neg', short)
     if (short) s.textContent = `Min ${inr(c.min)} for 1 share`
     else if (fb.input === 'qty') s.textContent = `Trade value ${inr(c.value)} · Margin ${inr(c.margin)}${levTx}`
-    else s.textContent = `${c.q.toLocaleString('en-IN')} shares · Margin ${inr(c.margin)}${levTx}`
+    else s.textContent = `${c.q.toLocaleString('en-IN')} share${c.q > 1 ? 's' : ''} · Margin ${inr(c.margin)}${levTx}`
     // Founder feedback (product eligibility): no product picked (intraday shut / not offered) → no 1-tap order
     $('#fbBuy').disabled = $('#fbSell').disabled = short || !product()
   }
   const setAmt = v => { fb.amt = Math.max(0, Math.min(1e7, Math.round(v) || 0)); renderPanel(); renderForm() }
   const step = d => fb.input === 'amt' ? setAmt((Math.round(fb.amt / STEP) + d) * STEP) : (setQty(st.qty + d), renderForm())
   $('#fbMinus').onclick = () => step(-1); $('#fbPlus').onclick = () => step(1)
-  inEl.addEventListener('focus', () => { inEl.value = fb.input === 'amt' ? (fb.amt || '') : st.qty; inEl.select() })
+  // ₹ Amount: the bar's field is too narrow for lakhs, so tapping it opens the "Enter trade value" sheet instead of typing in place
+  inEl.addEventListener('focus', () => {
+    if (fb.input === 'amt') { inEl.blur(); openAmt(); return }
+    inEl.value = st.qty; inEl.select()
+  })
+  inEl.addEventListener('click', () => { if (fb.input === 'amt' && $('#sh-amt').hidden) { inEl.blur(); openAmt() } })
   inEl.addEventListener('input', () => { const n = +inEl.value.replace(/\D/g, ''); fb.input === 'amt' ? (fb.amt = n) : null; if (fb.input === 'amt') { renderPanel(); renderForm() } })
   inEl.addEventListener('change', () => { const n = +inEl.value.replace(/\D/g, ''); fb.input === 'amt' ? setAmt(n) : (setQty(n), renderForm()) })
   inEl.addEventListener('blur', renderPanel)
@@ -76,6 +84,45 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
     $$('[data-fbunit]').forEach(b => b.textContent = v === 'amt' ? 'Enter quantity instead' : 'Enter amount instead')
     renderPanel(); renderForm()
   }
+  // ---------- Enter trade value sheet (₹ Amount mode) ----------
+  $('#phone').insertAdjacentHTML('beforeend', `
+  <div class="sheet amt" id="sh-amt" hidden role="dialog" aria-label="Enter trade value">
+    <div class="amt-head"><span class="bl">Enter trade value</span><button class="i fbf-x press" id="amtX" aria-label="Close">&#xe103;</button></div>
+    <div class="amt-body">
+      <label class="amt-field"><span class="amt-cur num" aria-hidden="true">₹</span><input id="amtIn" class="amt-in num" inputmode="numeric" autocomplete="off" placeholder="0" aria-label="Trade value in rupees"></label>
+      <div class="bs amt-sum num" id="amtSum" aria-live="polite"></div>
+      <div class="fbf-chips amt-chips" id="amtChips">${[1000, 10000, 50000, 100000].map(v => `<button class="chip bs press" data-add="${v}">+${inr(v)}</button>`).join('')}</div>
+    </div>
+    <div class="amt-foot">
+      <div class="fbf-notice bs" id="amtNotice" hidden></div>
+      <button class="btn primary bmb press amt-done" id="amtDone">Done</button>
+    </div>
+  </div>`)
+  const amtIn = $('#amtIn')
+  function renderAmt() {
+    const c = calc(price()), short = c.q < 1, over = c.margin > FUNDS, s = $('#amtSum')
+    s.classList.toggle('neg', short)
+    s.textContent = short ? `Min ${inr(c.min)} for 1 share` : `${c.q.toLocaleString('en-IN')} share${c.q > 1 ? 's' : ''} · Margin ${inr(c.margin)}${c.L > 1 ? ` · ${c.L}x` : ''}`
+    const nt = $('#amtNotice'); nt.hidden = short || !over; nt.textContent = `Margin is ${inr(c.margin - FUNDS)} more than your available funds.`
+    $('#amtDone').disabled = short
+  }
+  function showAmtValue() { amtIn.value = fb.amt ? fb.amt.toLocaleString('en-IN') : ''; amtIn.style.width = Math.max(1, amtIn.value.length) + 0.5 + 'ch' }
+  function openAmt() {
+    showAmtValue(); renderAmt(); showSheet('amt')
+    setTimeout(() => { amtIn.focus(); amtIn.setSelectionRange(amtIn.value.length, amtIn.value.length) }, 60)
+  }
+  amtIn.addEventListener('input', () => {
+    fb.amt = Math.min(1e7, +amtIn.value.replace(/\D/g, '')); showAmtValue()
+    amtIn.setSelectionRange(amtIn.value.length, amtIn.value.length)
+    renderAmt(); renderPanel(); renderForm()
+  })
+  amtIn.addEventListener('keydown', e => { if (e.key === 'Enter' && !$('#amtDone').disabled) hideSheet('amt') })
+  $('#amtChips').addEventListener('click', e => {
+    const b = e.target.closest('[data-add]'); if (!b) return
+    fb.amt = Math.min(1e7, fb.amt + +b.dataset.add); showAmtValue(); renderAmt(); renderPanel(); renderForm()
+  })
+  $('#amtDone').onclick = () => hideSheet('amt'); $('#amtX').onclick = () => hideSheet('amt')
+
   const send = () => toast('Prototype: no order is sent to the exchange.')
   $('#fbBuy').onclick = send; $('#fbSell').onclick = send
 
