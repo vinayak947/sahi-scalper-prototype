@@ -220,12 +220,19 @@ function nudgeStrip(delay=700){
     if($("#scalper").hidden) return;
     if(open.length||!$("#tourTip").hidden) return nudgeStrip(300); // wait for the sheet / tour to close
     if(nudgeAnim) nudgeAnim.cancel();
-    const atEnd=st.group.indexOf(st.sym)===st.group.length-1, d=atEnd?56:-56; // reveal what comes next (or before, at the end of the list)
+    // Hint toward the neighbour that comes next (the one before it, at the end of the list). The strip travels most of the way to that chip
+    // (distance measured from the chips, so it reads the same for first, middle and last stocks) and the chip lights up as it arrives.
+    const ps=[...track.querySelectorAll(".pill")], i=st.group.indexOf(st.sym), atEnd=i===ps.length-1, nb=ps[atEnd?i-1:i+1], cur=ps[i];
+    if(!nb||!cur) return;
+    const mid=p=>p.offsetLeft+p.offsetWidth/2, d=Math.round((mid(cur)-mid(nb))*.7), clear=()=>nb.classList.remove("near"); // sign: toward nb
+    nb.classList.add("near");
+    if(reduceMotion()){ setTimeout(clear,900); return } // no travel; the lit neighbour is the hint
     nudgeAnim=track.animate([
       {transform:"translateX(0)",easing:"cubic-bezier(.77,0,.175,1)"},
-      {transform:`translateX(${d}px)`,offset:.4},
-      {transform:`translateX(${d}px)`,offset:.52,easing:"cubic-bezier(.23,1,.32,1)"},
-      {transform:"translateX(0)"}],{duration:1300});
+      {transform:`translateX(${d}px)`,offset:.42},
+      {transform:`translateX(${d}px)`,offset:.56,easing:"cubic-bezier(.23,1,.32,1)"},
+      {transform:"translateX(0)"}],{duration:1500});
+    nudgeAnim.onfinish=nudgeAnim.oncancel=clear;
   },delay);
 }
 function stopNudge(){clearTimeout(nudgeT); if(nudgeAnim){nudgeAnim.cancel(); nudgeAnim=null}}
