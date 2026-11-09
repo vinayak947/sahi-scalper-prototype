@@ -40,9 +40,7 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
       <button class="bs-btn sell press" id="fbSell"><span class="bs">Sell at</span><span class="bmb" id="fbSellLbl">Mkt</span></button>
     </div>
     <div class="fb-sum">
-      <span class="fb-sumpad" aria-hidden="true"></span>
       <span class="bx fb-sumtx num" id="fbSum" aria-live="polite"></span>
-      <span class="lev-badge bxb" id="fbLev">5x</span>
     </div>
   </div>`)
 
@@ -53,12 +51,11 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
     $('#fbInLbl').textContent = fb.input === 'amt' ? 'Trade value' : 'Quantity'
     if (document.activeElement !== inEl) inEl.value = fb.input === 'amt' ? inr(fb.amt) : st.qty.toLocaleString('en-IN')
     inEl.setAttribute('aria-label', fb.input === 'amt' ? 'Amount in rupees' : 'Quantity')
-    const lev = $('#fbLev'); lev.textContent = c.L + 'x'; lev.hidden = c.L <= 1
-    const s = $('#fbSum'), short = c.q < 1
+    const s = $('#fbSum'), short = c.q < 1, levTx = c.L > 1 ? ` · ${c.L}x` : '' // leverage reads inline with the margin, no separate pill
     s.classList.toggle('neg', short)
     if (short) s.textContent = `Min ${inr(c.min)} for 1 share`
-    else if (fb.input === 'qty') s.textContent = `Trade value ${inr(c.value)} · Margin ${inr(c.margin)}`
-    else s.textContent = `${c.q.toLocaleString('en-IN')} shares · Margin ${inr(c.margin)}`
+    else if (fb.input === 'qty') s.textContent = `Trade value ${inr(c.value)} · Margin ${inr(c.margin)}${levTx}`
+    else s.textContent = `${c.q.toLocaleString('en-IN')} shares · Margin ${inr(c.margin)}${levTx}`
     // Founder feedback (product eligibility): no product picked (intraday shut / not offered) → no 1-tap order
     $('#fbBuy').disabled = $('#fbSell').disabled = short || !product()
   }

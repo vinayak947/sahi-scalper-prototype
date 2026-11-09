@@ -11,7 +11,6 @@ body:not(.fb2) .fb-on, body.fb2 .fb-off{display:none!important}
 .fb-sum{display:flex;align-items:center;gap:var(--sp-8);padding:var(--sp-8) var(--sp-4) 0}
 .fb-sumtx{flex:1;min-width:0;text-align:center;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fb-sumtx.neg{color:var(--text-negative)}
-.fb-sumpad{width:28px;flex:none} /* balances the leverage badge so the summary stays centred */
 /* Leverage badge (approximation of DLS Leverage badge) */
 .lev-badge{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:var(--r-4);background:var(--surface-brand-subtle);color:var(--icon-brand);flex:none;vertical-align:middle}
 

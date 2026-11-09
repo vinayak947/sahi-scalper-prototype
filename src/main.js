@@ -139,10 +139,11 @@ function enterScalper(sym){
 let scBack="#home";
 // Back goes to where the stock was picked; the scanners page keeps its scroll and brings the last-viewed stock into view.
 $("#btnClose").onclick=()=>{stopNudge(); $("#scalper").hidden=true; $(scBack).hidden=false;
-  if(scBack==="#scanAll"){renderSC.syncFromScalper(); const r=$(`#saBody [data-sym="${st.sym}"]`); r&&r.scrollIntoView({block:"nearest"})}
+  if(scBack==="#scanAll"){renderSC.popFrom(); renderSC.syncFromScalper(); const r=$(`#saBody [data-sym="${st.sym}"]`); r&&r.scrollIntoView({block:"nearest"})}
   scBack="#home"};
 // One "Stocks on the move" screen: the list icon on the chart opens the same full page as Trade → Stock Scalper (no separate bottom sheet).
-$("#btnList").onclick=()=>{scBack="#scanAll"; $("#btnClose").onclick()};
+// Back on that page returns to this chart (the page remembers which screen opened it).
+$("#btnList").onclick=()=>{stopNudge(); renderSC.syncFromScalper(); renderSC.openAll("scalper"); scBack="#scanAll"; const r=$(`#saBody [data-sym="${st.sym}"]`); r&&r.scrollIntoView({block:"nearest"})};
 
 // ---------- stock strip: slide through the list without leaving the chart ----------
 // The strip snaps the centred chip. While a finger drags it, the chip under the centre lights up with a light haptic tick;

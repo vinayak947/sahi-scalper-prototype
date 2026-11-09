@@ -70,16 +70,20 @@ export function initScanners(c){
   $$(".sc-tip .x").forEach(x=>x.onclick=()=>x.parentElement.hidden=true);
   $$("[data-filter]").forEach(b=>b.onclick=openFilter);
   // One full page, two entry points, both titled "Stocks on the move": Home "View all" and Trade → Stock Scalper.
+  const openers=[]; // stack of screens that opened this page; Back pops it
+  const popFrom=()=>{ if(openers[openers.length-1]==="scalper") openers.pop() }; // closing a chart that was opened from this page's own chart entry
   function openAll(from){
     hideTips();
     $("#saTitle").textContent="Stocks on the move";
+    // Remember the screen that opened this page, so Back returns there (Home, the chart, Watchlist…), never always Home.
+    const prev=$$(".screen").find(x=>!x.hidden&&x.id!=="scanAll"); if(prev) openers.push(prev.id);
     $$(".screen").forEach(s=>s.hidden=true); $("#scanAll").hidden=false; $("#saBody").scrollTop=0; render(); placeThumb($("#saView"));
   }
   $("#scwAll").onclick=()=>openAll("home");
-  $("#saBack").onclick=()=>{hideTips(); $("#scanAll").hidden=true; $("#home").hidden=false};
+  $("#saBack").onclick=()=>{hideTips(); $("#scanAll").hidden=true; ($("#"+openers.pop())||$("#home")).hidden=false};
   bindSeg($("#saView"),v=>{sc.view=v; render()});
   render();
-  render.openAll=openAll; render.chart=chart; render.xAxis=xAxis; // shared with the Watchlist chart view
+  render.openAll=openAll; render.popFrom=popFrom;render.chart=chart; render.xAxis=xAxis; // shared with the Watchlist chart view
   // Coming back from the chart: if the scanner was changed in "Stocks on the move", show that one here too.
   render.syncFromScalper=()=>{ if(st.src==="scan"&&(st.scan!==sc.scan||st.dir!==sc.dir)){sc.scan=st.scan; sc.dir=st.dir; render()} };
   return render;
