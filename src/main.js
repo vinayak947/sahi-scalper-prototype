@@ -141,7 +141,8 @@ let scBack="#home";
 $("#btnClose").onclick=()=>{stopNudge(); $("#scalper").hidden=true; $(scBack).hidden=false;
   if(scBack==="#scanAll"){renderSC.syncFromScalper(); const r=$(`#saBody [data-sym="${st.sym}"]`); r&&r.scrollIntoView({block:"nearest"})}
   scBack="#home"};
-$("#btnList").onclick=()=>{renderSwitch();showSheet("switch")};
+// One "Stocks on the move" screen: the list icon on the chart opens the same full page as Trade → Stock Scalper (no separate bottom sheet).
+$("#btnList").onclick=()=>{scBack="#scanAll"; $("#btnClose").onclick()};
 
 // ---------- stock strip: slide through the list without leaving the chart ----------
 // The strip snaps the centred chip. While a finger drags it, the chip under the centre lights up with a light haptic tick;
@@ -469,7 +470,7 @@ initLive({$$,books:[S,IDX],fmt,onTick(moved){
 
 // boot: open on Home; #scalper / #scanner jump straight in
 function boot(){const h=location.hash.slice(1);
-  if(h.startsWith("scalper")){st.group=[...SCAN[st.scan][st.dir]]; enterScalper(st.group[0])} else if(h.startsWith("scanner")){renderSwitch(); showSheet("switch")} else if(h.startsWith("stocks")) renderSC.openAll("scalper"); else if(h.startsWith("watchlist")) WLP.open()}
+  if(h.startsWith("scalper")){st.group=[...SCAN[st.scan][st.dir]]; enterScalper(st.group[0])} else if(h.startsWith("scanner")) renderSC.openAll("scalper"); else if(h.startsWith("stocks")) renderSC.openAll("scalper"); else if(h.startsWith("watchlist")) WLP.open()}
 $("#demoTime").onchange=e=>setDemo(e.target.value);
 setDemo($("#demoTime").value);
 document.fonts.ready.then(()=>{$$(".seg").forEach(placeThumb); draw()});
