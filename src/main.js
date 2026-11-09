@@ -2,6 +2,7 @@ import './tokens.css'
 import './scalper.css'
 import {initScanners} from './scanners.js'
 import {initFb2} from './fb2.js'
+import {initWatchlist} from './watchlist.js'
 import {resolve} from './eligibility.js'
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -15,7 +16,10 @@ const S={
  HYUNDAI:["Hyundai Motor India",2108.10,-27.30],CASTROLIND:["Castrol India",190.30,-1.26],
  HUDCO:["Housing & Urban Dev",169.14,5.45],KALYANKJIL:["Kalyan Jewellers India",611.00,19.00],HAVELLS:["Havells India",1159.50,36.50],AUROPHARMA:["Aurobindo Pharma",1855.30,51.30],
  COFORGE:["Coforge",1912.40,38.60,1],MAXHEALTH:["Max Healthcare Institute",1184.10,19.70,1],TRENT:["Trent",4870.00,62.50,1],
- ADANIENT:["Adani Enterprises",2706.30,-24.70],TATAGOLD:["Tata Gold ETF",13.76,0.04]
+ ADANIENT:["Adani Enterprises",2706.30,-24.70],TATAGOLD:["Tata Gold ETF",13.76,0.04],
+ // Watchlist → Stock Scanners → Gainers, captured from SAHI 968 on 9 Nov; plus the Recently viewed MCX future
+ GLAXO:["Glaxosmithkline Pharma",2710.00,170.40],UNIONBANK:["Union Bank of India",197.00,10.45],SANSERA:["Sansera Engineering",4653.40,239.10],
+ GLAND:["Gland Pharma",3302.40,169.60],IRB:["IRB Infrastructure Dev",18.27,0.93],CRUDEOILM:["Crude Oil Mini 19 Nov Fut",8273.00,-283.00]
 };
 const SCAN={
  pvb:{name:"Price Volume Breakout",bull:["DATAPATTNS","IREDA","PNB","EMAMILTD","EXIDEIND","BANKBARODA","COCHINSHIP"],bear:["JUBLFOOD","TENNECO","PIIND"]},
@@ -23,7 +27,7 @@ const SCAN={
  orb:{name:"Opening Range Breakout",bull:["COFORGE","MAXHEALTH","TRENT"],bear:["SCHNEIDER","EMCURE","OLAELEC","HYUNDAI","CASTROLIND"]}
 };
 const fbHook={update(){},setInput(){}}; // order bar + form (fb2.js) re-render on order changes
-const LISTS=[{name:"Stock Scanners",items:["ADANIENT"]},{name:"xyz",items:[]},{name:"New watchlist",items:[]}];
+const LISTS=[{name:"Stock Scanners",items:["ADANIENT"]},{name:"xyz",items:[]},{name:"New watchlist",items:[]},{name:"New watchlist",items:[]}]; // the 4 lists on the signed-in account
 const HOLD={TATAGOLD:{qty:1,avg:14.16}};
 const st={src:"scan",scan:"pvb",dir:"bull",list:0,sym:"TATAGOLD",group:["TATAGOLD"],mode:"mkt",limit:null,qty:1,legend:false,sort:"popular",holdView:false,prod:"mis",prodPref:"mis"};
 
@@ -77,7 +81,7 @@ function renderSwitch(){
   });
   $$("#bbTog button").forEach(b=>b.classList.toggle("on",b.dataset.d===st.dir));
   const items=sorted(curItems());
-  if(!items.length){listEl.innerHTML=`<div class="empty"><span class="bl">Your watchlist is empty</span><span class="bs sec">Add Stocks, ETFs or F&amp;O you want to track.</span></div>`;return}
+  if(!items.length){listEl.innerHTML=`<div class="empty"><span class="bmb">Your watchlist is empty</span><span class="bs sec">Add Stocks, ETFs or F&amp;O you want to track.</span></div>`;return}
   listEl.innerHTML=items.map(k=>{const [n,l,c]=S[k], h=st.src==="hold"?HOLD[k]:null;
     return `<button class="row" data-sym="${k}"><span class="l"><span class="bm">${n}${k==="ADANIENT"?'<i class="i" style="font-size:14px">&#xe000;</i>':""}</span><span class="bs ter">NSE${h?' <span style="color:var(--text-tertiary)">•</span> <span class="num">'+h.qty+'</span>':""}</span></span><span class="r"><span class="bmb num">${fmt(l)}</span><span class="bs num ${c>=0?"pos":"neg"}">${sign(c)} (${pct(k).toFixed(2)}%)</span></span></button>`}).join("");
   listEl.querySelectorAll(".row").forEach(r=>r.onclick=()=>{st.group=items; hideSheet("switch",()=>enterScalper(r.dataset.sym))});
@@ -445,9 +449,14 @@ const renderSC=initScanners({$,$$,S,SCAN,st,fmt,sign,pct,chgTxt,sorted,bindSeg,p
   openFilter:()=>{sortDraft=st.sort;renderFilter();showSheet("filter")}, filterDirty:()=>st.sort!=="popular"||fApplied!==defF(),
   appliedFilter:()=>JSON.parse(fApplied), inWatch, toggleWatch, setBack:s=>{scBack=s;$(s).hidden=true}});
 
+// Watchlist page (Home → Watchlist in the bottom nav)
+const WLP=initWatchlist({$,$$,S,LISTS,fmt,sign,showSheet,hideSheet,toast,bindSeg,placeThumb,enterScalper,st,
+  setBack:s=>{scBack=s;$(s).hidden=true}, chart:renderSC.chart, xAxis:renderSC.xAxis});
+$("#navWatch").onclick=()=>WLP.open();
+
 // boot: open on Home; #scalper / #scanner jump straight in
 function boot(){const h=location.hash.slice(1);
-  if(h.startsWith("scalper")){st.group=[...SCAN[st.scan][st.dir]]; enterScalper(st.group[0])} else if(h.startsWith("scanner")){renderSwitch(); showSheet("switch")} else if(h.startsWith("stocks")) renderSC.openAll("scalper")}
+  if(h.startsWith("scalper")){st.group=[...SCAN[st.scan][st.dir]]; enterScalper(st.group[0])} else if(h.startsWith("scanner")){renderSwitch(); showSheet("switch")} else if(h.startsWith("stocks")) renderSC.openAll("scalper"); else if(h.startsWith("watchlist")) WLP.open()}
 $("#demoTime").onchange=e=>setDemo(e.target.value);
 setDemo($("#demoTime").value);
 document.fonts.ready.then(()=>{$$(".seg").forEach(placeThumb); draw()});

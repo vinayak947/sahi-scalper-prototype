@@ -51,11 +51,11 @@ export function initScanners(c){
     });
     $$(".sc-bb button").forEach(b=>b.classList.toggle("on",b.dataset.d===sc.dir));
     $$("[data-filter] .dot").forEach(d=>d.hidden=!dirty);
-    $("#scwGrid").innerHTML=it.length?it.slice(0,4).map(k=>{const [n,l]=S[k];return `<div class="sc-card press" role="button" tabindex="0" data-sym="${k}"><span class="bl nm">${n}</span>${wl(k)}<span class="bm num lt">${fmt(l)}</span><span class="bm num ch ${cls(k)}">${chgTxt(k)}</span>${chart(k,160,150)}${xAxis(["Nov","11:15","13:15"])}</div>`}).join(""):empty;
+    $("#scwGrid").innerHTML=it.length?it.slice(0,4).map(k=>{const [n,l]=S[k];return `<div class="sc-card press" role="button" tabindex="0" data-sym="${k}"><span class="bm nm">${n}</span>${wl(k)}<span class="bm num lt">${fmt(l)}</span><span class="bs num ch ${cls(k)}">${chgTxt(k)}</span>${chart(k,160,150)}${xAxis(["Nov","11:15","13:15"])}</div>`}).join(""):empty;
     $("#scwAll").hidden=!it.length;
     $$("[data-chartonly]").forEach(e=>e.hidden=sc.view!=="chart");
     $("#saBody").innerHTML=!it.length?empty
-      :sc.view==="chart"?it.map(k=>{const [n,l]=S[k];return `<div class="sa-card press" role="button" tabindex="0" data-sym="${k}"><span class="hd"><span class="bl">${n}</span><span class="tags"><span class="bxx tf">5m</span>${wl(k)}</span></span><span class="bl num">${fmt(l)} <span class="bm ${cls(k)}">${chgTxt(k)}</span> <span class="bm sec">today</span></span>${chart(k,340,170,1)}${xAxis(["Nov","11:15","13:15","15:15"])}</div>`}).join("")
+      :sc.view==="chart"?it.map(k=>{const [n,l]=S[k];return `<div class="sa-card press" role="button" tabindex="0" data-sym="${k}"><span class="hd"><span class="bm">${n}</span><span class="tags"><span class="bxx tf">5m</span>${wl(k)}</span></span><span class="bm num">${fmt(l)} <span class="bs ${cls(k)}">${chgTxt(k)}</span> <span class="bs sec">today</span></span>${chart(k,340,170,1)}${xAxis(["Nov","11:15","13:15","15:15"])}</div>`}).join("")
       :sc.view==="list"?it.map(k=>{const [n,l]=S[k];return `<div class="row" role="button" tabindex="0" data-sym="${k}"><span class="l"><span class="bm">${n}</span><span class="bs ter">NSE</span></span><span class="r"><span class="bmb num">${fmt(l)}</span><span class="bs num ${cls(k)}">${chgTxt(k)}</span></span>${wl(k)}</div>`}).join("")
       :`<div style="overflow-x:auto"><table class="sa-tbl bm"><tr class="bs"><th>Instrument</th><th>LTP</th><th>Change</th><th>Change %</th></tr>${it.map(k=>`<tr data-sym="${k}"><td>${k}</td><td class="num">${fmt(S[k][1])}</td><td class="num ${cls(k)}">${sign(S[k][2])}</td><td class="num ${cls(k)}">${S[k][2]<0?"-":""}${pct(k).toFixed(2)}%</td></tr>`).join("")}</table></div>`;
     // The picked scanner becomes the list the chart's stock strip slides through, and what "Stocks on the move" opens on.
@@ -73,13 +73,13 @@ export function initScanners(c){
   function openAll(from){
     hideTips();
     $("#saTitle").textContent="Stocks on the move";
-    $("#home").hidden=true; $("#scanAll").hidden=false; $("#saBody").scrollTop=0; render(); placeThumb($("#saView"));
+    $$(".screen").forEach(s=>s.hidden=true); $("#scanAll").hidden=false; $("#saBody").scrollTop=0; render(); placeThumb($("#saView"));
   }
   $("#scwAll").onclick=()=>openAll("home");
   $("#saBack").onclick=()=>{hideTips(); $("#scanAll").hidden=true; $("#home").hidden=false};
   bindSeg($("#saView"),v=>{sc.view=v; render()});
   render();
-  render.openAll=openAll;
+  render.openAll=openAll; render.chart=chart; render.xAxis=xAxis; // shared with the Watchlist chart view
   // Coming back from the chart: if the scanner was changed in "Stocks on the move", show that one here too.
   render.syncFromScalper=()=>{ if(st.src==="scan"&&(st.scan!==sc.scan||st.dir!==sc.dir)){sc.scan=st.scan; sc.dir=st.dir; render()} };
   return render;

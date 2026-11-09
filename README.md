@@ -10,7 +10,9 @@ npm run dev        # http://localhost:8444  (set PORT=xxxx to change)
 ```
 
 Open it at phone width (browser device mode, 412 wide) or on a desktop, where it shows in a phone frame. The first screen is Home; tap **Trade**, then **Stock Scalper**. That opens the full **Stocks on the move** page (also what the Home widget's View all opens); the chart opens once you pick a stock. On the chart, slide the stock strip under it to move through the same list.
-Shortcuts: `/#stocks` opens the scanners landing page, `/#scalper` opens the scalper directly, `/#scanner` opens the Stocks on the move sheet. Every time the chart opens on a list of 2+ stocks, the stock strip nudges sideways once to show it slides.
+**Watchlist** (bottom nav) is rebuilt from SAHI 968: My Lists (list tabs, ⋮ Edit / Rename / Delete, + Create, ⚙ Manage watchlist, list / chart / table views, Sort by, Search & Add, empty state), Stock Scanners (the app's 23 scanner tabs, ⓘ explainer, index picker) and Recently viewed. Tapping an NSE stock opens it in Stock Scalper with that list in the strip.
+Text sizes match the app, measured on the emulator: tabs, section titles and rows 16, sub text 14, nav labels 12.
+Shortcuts: `/#stocks` opens the scanners landing page, `/#scalper` opens the scalper directly, `/#scanner` opens the Stocks on the move sheet, `/#watchlist` opens Watchlist. Every time the chart opens on a list of 2+ stocks, the stock strip nudges sideways once to show it slides.
 
 ## Where things are
 
@@ -19,6 +21,7 @@ Shortcuts: `/#stocks` opens the scanners landing page, `/#scalper` opens the sca
 | Colours, spacing, radius, fonts | `src/tokens.css` (SAHI Base · DLS). Nothing else should hold a colour value. |
 | Screens and sheets (Home, Trade with SAHI, Scanners landing, Scalper, Stocks on the move, Filter, P&L, Positions, Orders, More, Order defaults, Guided tour) | `index.html` |
 | Styles for all of the above | `src/scalper.css` |
+| Watchlist page (screens, sheets, sample scanner lists) | `src/watchlist.js`, `src/watchlist.css` |
 | Sample stocks, scanners, holdings, chart, order bar, sheets, tour | `src/main.js` |
 | Fonts (SAHI Sans, SAHI Season Display Mix, DlsIcons) | `public/fonts` |
 | Images | `public/assets` |
