@@ -1,0 +1,28 @@
+@font-face{font-family:"SAHI Sans";font-weight:400;font-display:block;src:url("/fonts/SAHISans-Regular.ttf") format("truetype")}
+@font-face{font-family:"SAHI Sans";font-weight:500;font-display:block;src:url("/fonts/SAHISans-Medium.ttf") format("truetype")}
+@font-face{font-family:"SAHI Season Display Mix";font-weight:500;font-display:block;src:url("/fonts/SAHISeasonDisplayMix-Medium.otf") format("opentype")}
+@font-face{font-family:"DlsIcons";font-display:block;src:url("/fonts/DlsIcons.ttf") format("truetype")}
+
+/* SAHI Base · DLS tokens (semantic Light mode, primitives). Nothing else should hold a colour value. */
+:root{
+  color-scheme:light;
+  --surface-L0:#e6e6e6;--surface-L1:#ffffff;--surface-L2:#f5f5f5;--surface-L3:#dddddd;--surface-L4:#d3d3d3;--surface-recessed:#ededed;
+  --surface-inverse-L1:#0f0f0f;--surface-brand-L1:#66033c;--surface-brand-subtle:#feccf1;
+  --surface-positive-default:#116a40;--surface-positive-bold:#105737;--surface-positive-subtle:#dafeec;
+  --surface-negative-default:#c4342e;--surface-negative-bold:#902824;--surface-negative-subtle:#fce5e4;
+  --surface-tr-inverse-L1:#0f0f0f12;--surface-tr-inverse-L2:#0f0f0f1f;--surface-tr-inverse-L5:#0f0f0fb3;--surface-tr-overlay-L1:#00000080;
+  --surface-tr-positive-tertiary:#116a401f;--surface-tr-negative-tertiary:#c4342e14;
+  --candle-pos:#0b9981;--candle-neg:#f23645;
+  --text-primary:#0f0f0f;--text-secondary:#535353;--text-tertiary:#727272;--text-inverse-primary:#ffffff;--text-inverse-secondary:#a3a3a3;
+  --accent-66:#fc6ad0;
+  --surface-attentive-L1:#ffe7cd;--text-attentive:#734a00;--icon-attentive:#945f00;--border-attentive-L1:#945f00;
+  --text-positive:#08955a;--text-negative:#c4342e;--text-brand:#ef4fac;
+  --border-L1:#0f0f0f1f;--border-L2:#0f0f0f;--border-inverse-L3:#ffffff47;--border-inverse-L4:#ffffff;
+  --icon-primary:#0f0f0f;--icon-secondary:#535353;--icon-positive:#08955a;--icon-negative:#c4342e;--icon-brand:#66033c;
+  --shadow-L1:#00000014;--shadow-L2:#00000024;
+  --sp-2:2px;--sp-4:4px;--sp-8:8px;--sp-12:12px;--sp-16:16px;--sp-24:24px;--sp-32:32px;--sp-48:48px;
+  --r-4:4px;--r-8:8px;--r-12:12px;--r-16:16px;--r-full:999px;
+  --bw-hair:1px;--bw-emph:1.5px;--bw-thick:2px;
+  --sans:"SAHI Sans",system-ui,sans-serif;--display:"SAHI Season Display Mix",Georgia,serif;
+  --ease-out:cubic-bezier(.23,1,.32,1);--ease-drawer:cubic-bezier(.32,.72,0,1);
+}

@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>SAHI Stock Scalper</title>
+    <link rel="icon" href="/assets/logo.png" />
+  </head>
+  <body>
+<div class="phone" id="phone">
+  <!-- HOME -->
+  <section class="screen" id="home">
+    <div class="home-head">
+      <div class="logo"><img src="/assets/logo.png" alt="SAHI"></div>
+      <div class="search bm"><i class="i" style="font-size:18px">&#xe30a;</i>Search SAHI</div>
+      <div class="circ"><i class="i">&#xe064;</i></div>
+      <div class="circ"><i class="i">&#xe378;</i></div>
+    </div>
+    <div class="home-tabs bl">
+      <span class="on">F&amp;O</span><span>Stocks</span><span>Commodities <em class="badge-new bxx" style="font-style:normal">New</em></span><span>IPO</span><span>Research</span>
+    </div>
+    <div class="home-body">
+      <div class="sec-title bl">Indices</div>
+      <div class="idx-row">
+        <div class="idx"><span class="tag bx sec">Expiry</span><span class="bm">NIFTY50</span><span class="bl num">25003.65</span><span class="bs pos num">+17.25 (0.07%)</span></div>
+        <div class="idx"><span class="bm">SENSEX</span><span class="bl num">81064.68</span><span class="bs pos num">+65.28 (0.08%)</span></div>
+        <div class="idx"><span class="bm">BANKNIFTY</span><span class="bl num">59632.20</span><span class="bs pos num">+781.55 (1.33%)</span></div>
+      </div>
+      <section class="scw" id="scw">
+        <div class="scw-head"><div><div class="bl">Stocks on the move</div><div class="bm sec" id="scwSub">No active scanning</div></div><button class="fbtn press" data-filter aria-label="Filter"><i class="i">&#xe1df;</i><span class="dot" hidden></span></button></div>
+        <div class="tabs bl sc-tabs"></div>
+        <div class="bb-row"><div class="bbtog full bm sc-bb"><button class="on" data-d="bull"><span class="lbl">Bullish</span><i class="i up">&#xe36d;</i></button><button data-d="bear"><span class="lbl">Bearish</span><i class="i dn">&#xe36c;</i></button></div></div>
+        <div class="scw-grid" id="scwGrid"></div>
+        <button class="scw-all bl press" id="scwAll">View all<i class="i">&#xe02b;</i></button>
+        <div class="tip bm sc-tip" hidden><div class="tx"></div><button class="x" aria-label="Close"><i class="i">&#xe103;</i></button></div>
+      </section>
+      <div class="home-cta">
+        <button class="press bm"><span class="ic"><i class="i">&#xe3b4;</i></span>Option Chain</button>
+        <button class="press bm"><span class="ic"><i class="i">&#xe050;</i></span>Options Scalper</button>
+      </div>
+      <div class="note bs">Home is shown for context only. Tap <b class="bsb">Trade</b> below, then <b class="bsb">Stock Scalper</b>.</div>
+    </div>
+    <nav class="bnav bxx" aria-label="Main">
+      <button class="on"><i class="i">&#xe221;</i><span class="bx">Home</span></button>
+      <button><i class="i">&#xe012;</i><span class="bx">Watchlist</span></button>
+      <button id="navTrade"><i class="i">&#xe3b1;</i><span class="bx">Trade</span></button>
+      <button><i class="i">&#xe13e;</i><span class="bx">Orders</span></button>
+      <button><i class="i">&#xe013;</i><span class="bx">Portfolio</span></button>
+    </nav>
+  </section>
+
+  <!-- STOCKS ON THE MOVE · full page. Stock Scalper and Home "View all" both land here. -->
+  <section class="screen" id="scanAll" hidden>
+    <header class="appbar"><!-- DLS App bar (SAHI Components · DLS 210:3769): Leading=back, Align=start -->
+      <button class="appbar-btn" id="saBack" aria-label="Back" title="Back"><i class="i">&#xe02a;</i></button>
+      <h1 class="appbar-title" id="saTitle">Stocks on the move</h1>
+      <div class="appbar-actions"><button class="appbar-btn" data-filter aria-label="Filter" title="Filter"><i class="i">&#xe1df;</i><span class="dot" hidden></span></button></div>
+    </header>
+    <div class="tabs bl sc-tabs"></div>
+    <div class="sa-tools">
+      <div class="seg subtle" id="saView"><span class="thumb"></span><button data-v="list" aria-label="List view"><i class="i">&#xe07b;</i></button><button class="on" data-v="chart" aria-label="Chart view"><i class="i">&#xe107;</i></button><button data-v="table" aria-label="Table view"><i class="i">&#xe072;</i></button></div>
+      <span class="sa-chip bs" data-chartonly><i class="i">&#xe3aa;</i><i class="i">&#xe170;</i></span><span class="sa-chip bs" data-chartonly>1D<i class="i">&#xe170;</i></span>
+      <div class="bbtog bm sc-bb" style="margin-left:auto"><button class="on" data-d="bull"><span class="lbl">Bullish</span><i class="i up">&#xe36d;</i></button><button data-d="bear"><span class="lbl">Bearish</span><i class="i dn">&#xe36c;</i></button></div>
+    </div>
+    <div class="sa-body" id="saBody"></div>
+    <div class="tip bm sc-tip" hidden><div class="tx"></div><button class="x" aria-label="Close"><i class="i">&#xe103;</i></button></div>
+  </section>
+
+  <!-- STOCK SCALPER -->
+  <section class="screen" id="scalper" hidden>
+    <div class="topbar">
+      <button class="cbtn press" id="btnClose" aria-label="Close scalper"><i class="i">&#xe103;</i></button>
+      <button class="cbtn press" aria-label="Ask Kyro"><svg width="18" height="18" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M38.1224 5.34583L38.1295 5.62397L39.2683 33.8145L26.3926 27.6975C25.7908 27.4616 25.1356 27.3317 24.4504 27.3317C23.4875 27.3317 22.5844 27.5874 21.8051 28.0348C20.2063 28.9529 19.1291 30.6768 19.1291 32.653C19.1291 33.6602 19.4093 34.602 19.8955 35.4052C20.6439 36.6408 21.8809 37.5473 23.3386 37.8574C23.463 37.8839 23.5892 37.9057 23.7167 37.9234L31.3223 39.2556C38.24 40.4674 44.7766 35.6806 45.7083 28.7196L48.677 6.53863C48.9056 4.83264 48.6909 3.21785 47.5131 1.8538C46.5264 0.67605 44.9946 -4.03607e-08 43.4665 0C43.339 1.19694e-09 43.2125 0.00408082 43.0874 0.0129214C42.6323 0.0566078 42.1804 0.135798 41.7562 0.279497L41.7484 0.291739C40.9578 0.558996 40.2503 1.00579 39.6746 1.5845C38.7154 2.54881 38.1224 3.8783 38.1224 5.34583Z" fill="url(#paint0_linear_4784_3274)"/>
+<path d="M82.6542 38.1224L82.376 38.1295L54.1855 39.2683L60.3025 26.3926C60.5384 25.7908 60.6683 25.1356 60.6683 24.4504C60.6683 23.4875 60.4126 22.5844 59.9652 21.8051C59.0471 20.2063 57.3232 19.1291 55.347 19.1291C54.3398 19.1291 53.398 19.4093 52.5948 19.8955C51.3592 20.6439 50.4527 21.8809 50.1426 23.3386C50.1161 23.463 50.0943 23.5892 50.0766 23.7167L48.7444 31.3223C47.5326 38.24 52.3194 44.7766 59.2804 45.7083L81.4614 48.677C83.1674 48.9056 84.7822 48.6909 86.1462 47.5131C87.324 46.5264 88 44.9946 88 43.4665C88 43.339 87.9959 43.2125 87.9871 43.0874C87.9434 42.6323 87.8642 42.1804 87.7205 41.7562L87.7083 41.7484C87.441 40.9578 86.9942 40.2502 86.4155 39.6746C85.4512 38.7154 84.1217 38.1224 82.6542 38.1224Z" fill="url(#paint1_linear_4784_3274)"/>
+<path d="M49.8776 82.6542L49.8705 82.376L48.7317 54.1855L61.6074 60.3025C62.2092 60.5384 62.8644 60.6683 63.5496 60.6683C64.5125 60.6683 65.4156 60.4126 66.1949 59.9652C67.7937 59.0471 68.8709 57.3232 68.8709 55.347C68.8709 54.3398 68.5907 53.398 68.1045 52.5948C67.3561 51.3592 66.1191 50.4527 64.6614 50.1426C64.537 50.1161 64.4108 50.0943 64.2833 50.0766L56.6777 48.7444C49.76 47.5326 43.2234 52.3194 42.2917 59.2804L39.323 81.4614C39.0944 83.1674 39.3091 84.7822 40.4869 86.1462C41.4736 87.324 43.0054 88 44.5335 88C44.661 88 44.7875 87.9959 44.9126 87.9871C45.3677 87.9434 45.8196 87.8642 46.2438 87.7205L46.2516 87.7083C47.0422 87.441 47.7498 86.9942 48.3254 86.4155C49.2846 85.4512 49.8776 84.1217 49.8776 82.6542Z" fill="url(#paint2_linear_4784_3274)"/>
+<path d="M5.34583 49.8776L5.62397 49.8705L33.8145 48.7317L27.6975 61.6074C27.4616 62.2092 27.3317 62.8644 27.3317 63.5496C27.3317 64.5125 27.5874 65.4156 28.0348 66.1949C28.9529 67.7937 30.6768 68.8709 32.653 68.8709C33.6602 68.8709 34.602 68.5907 35.4052 68.1045C36.6408 67.3561 37.5473 66.1191 37.8574 64.6614C37.8839 64.537 37.9057 64.4108 37.9234 64.2833L39.2556 56.6777C40.4674 49.76 35.6806 43.2234 28.7196 42.2917L6.53863 39.323C4.83264 39.0944 3.21785 39.3091 1.8538 40.4869C0.676051 41.4736 -4.03607e-08 43.0054 0 44.5335C1.19694e-09 44.661 0.0040808 44.7875 0.0129214 44.9126C0.0566077 45.3677 0.135799 45.8196 0.279498 46.2438L0.291739 46.2516C0.558996 47.0422 1.00579 47.7498 1.5845 48.3254C2.54881 49.2846 3.87829 49.8776 5.34583 49.8776Z" fill="url(#paint3_linear_4784_3274)"/>
+<defs>
+<linearGradient id="paint0_linear_4784_3274" x1="1.56261" y1="38.0358" x2="86.4375" y2="49.9642" gradientUnits="userSpaceOnUse">
+<stop stop-color="#E61C9A"/>
+<stop offset="1" stop-color="#A50F66"/>
+</linearGradient>
+<linearGradient id="paint1_linear_4784_3274" x1="1.56261" y1="38.0358" x2="86.4375" y2="49.9642" gradientUnits="userSpaceOnUse">
+<stop stop-color="#E61C9A"/>
+<stop offset="1" stop-color="#A50F66"/>
+</linearGradient>
+<linearGradient id="paint2_linear_4784_3274" x1="1.56261" y1="38.0358" x2="86.4375" y2="49.9642" gradientUnits="userSpaceOnUse">
+<stop stop-color="#E61C9A"/>
+<stop offset="1" stop-color="#A50F66"/>
+</linearGradient>
+<linearGradient id="paint3_linear_4784_3274" x1="1.56261" y1="38.0358" x2="86.4375" y2="49.9642" gradientUnits="userSpaceOnUse">
+<stop stop-color="#E61C9A"/>
+<stop offset="1" stop-color="#A50F66"/>
+</linearGradient>
+</defs>
+</svg></button>
+      <div class="chips">
+        <button class="chip bs num press" id="clock" data-sheet="time" aria-label="Market time">03:30:27</button>
+        <button class="chip bs press" data-sheet="pnl">P&amp;L <span class="pos">₹0</span></button>
+        <button class="chip bs press" data-sheet="positions">Positions</button>
+        <button class="chip bs press" data-sheet="orders">Orders</button>
+        <button class="chip bs press" id="chipFunds">Funds</button>
+      </div>
+      <button class="cbtn press" data-sheet="more" aria-label="More"><i class="i">&#xe09f;</i></button>
+    </div>
+    <div class="card chartcard" id="chartCard">
+      <div class="sym-head">
+        <div>
+          <div id="symText"><div class="bm nm" id="symName">Tata Gold ETF</div>
+          <div class="pr"><span class="bm num" id="symLtp">13.76</span><span class="bs num" id="symChg">+0.04 (0.29%)</span><span class="bs sec" id="symEx">NSE</span></div>
+        </div></div>
+        <div class="sym-tools" id="chartTools">
+          <span class="sbtn" aria-label="Search"><i class="i">&#xe30a;</i></span>
+          <span class="ivl"><span class="bm">5m</span><span class="bar"></span><i class="i" style="font-size:16px">&#xe3ac;</i></span>
+        </div>
+      </div>
+      <div class="chartwrap" id="chartWrap">
+        <canvas id="chart"></canvas>
+        <div class="legend">
+          <button class="lg-btn bs" id="lgBtn"><span id="lgTxt">1</span><i class="i" id="lgChev" style="font-size:14px">&#xe170;</i></button>
+          <div class="lg-vol bs" id="lgVol" hidden>Vol: <span class="num" id="volTxt">6.7L</span></div>
+          <button class="hold-chip bx press" id="holdChip" hidden><span id="holdTxt">1 Holding</span><i class="i" style="font-size:12px">&#xe02c;</i></button>
+        </div>
+        <div class="ann bx" id="ann" hidden><span class="k bxx">H</span><span class="q num" id="annQ">+1</span><span class="neg num" id="annPnl">-₹0.40</span><i class="i" style="font-size:12px">&#xe02b;</i></div>
+        <div class="limitline" id="limitLine" hidden>
+          <div class="limitpill"><span class="lp-h" id="lpHandle"><i class="i">&#xe07b;</i></span><button class="lp-x bs" id="lpReset"><i class="i" style="font-size:14px">&#xe103;</i>At Price</button></div>
+          <span class="limittag bx num" id="limitTag">13.76</span>
+        </div>
+        <button class="reset" id="resetBtn" hidden aria-label="Reset chart"><i class="i">&#xe0c6;</i></button>
+        <span class="wm"><img src="/assets/logo_fg_s.png" alt=""></span>
+      </div>
+      <div class="navpanel" id="navPanel">
+        <span class="navcount bx num" id="navCount" aria-live="polite"></span>
+        <div class="pills" id="pills" role="listbox" aria-label="Stocks in this list"><div class="track" id="pillTrack"></div></div>
+        <button class="obtn press" id="btnList" aria-label="Stocks on the move"><i class="i">&#xe07b;</i></button>
+      </div>
+    </div>
+    <div class="card orderpanel" id="orderPanel">
+      <div class="op-row1">
+        <button class="obtn press" aria-label="Market depth" id="btnDepth"><i class="i">&#xe3bc;</i></button>
+        <div class="op-main"><div class="seg inverse bm" id="modeSeg"><span class="thumb"></span><button class="on" data-v="mkt">1-Tap Mkt</button><button data-v="lmt">Limit/Trigger on Chart</button></div></div>
+        <button class="obtn press" aria-label="Open order form" id="btnForm"><i class="i">&#xe1d3;</i></button>
+      </div>
+      <div class="notice bs" id="opNotice" hidden role="status"></div>
+      <div class="op-row2">
+        <div class="col"><button class="bs-btn buy press" id="buyBtn"><span class="bs">Buy at</span><span class="bmb" id="buyLbl">Mkt</span></button><span class="bx num" id="mBuy">Margin: ₹14</span></div>
+        <div class="col"><div class="stepper"><button id="qMinus" aria-label="Decrease"><i class="i">&#xe09a;</i></button><input id="qty" class="num" inputmode="numeric" value="1" aria-label="Quantity"><button id="qPlus" aria-label="Increase"><i class="i">&#xe0bc;</i></button></div><span class="bx" id="mProd">Intraday</span></div>
+        <div class="col"><button class="bs-btn sell press" id="sellBtn"><span class="bs">Sell at</span><span class="bmb" id="sellLbl">Mkt</span></button><span class="bx num" id="mSell">Margin: ₹14</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="scrim" id="scrim" hidden></div>
+
+  <!-- Trade with SAHI -->
+  <div class="sheet" id="sh-trade" hidden role="dialog" aria-label="Trade with SAHI">
+    <div class="tw-head"><div class="tw-title">Trade with SAHI</div></div>
+    <div class="tw-list">
+      <!-- Layout per the updated wireframe: Options Scalper (full width) · Stocks Scalper (full width, NEW) · Options Seller | AI Stock Signals -->
+      <div class="tw-row"><div class="tw-card tw-wide"><span class="tw-ic tw-ic32"><i class="i" aria-hidden="true">&#xe050;</i></span><span class="tw-lbl bmb">Options Scalper</span><i class="i tw-chev" aria-hidden="true">&#xe02b;</i></div></div>
+      <div class="tw-row">
+        <button class="tw-card tw-wide tw-new press" id="openStockScalper"><span class="badge-new tw-badge">NEW</span><span class="tw-ic tw-ic32"><i class="i" aria-hidden="true">&#xe3cd;</i></span><span class="tw-lbl bmb">Stocks Scalper</span><i class="i tw-chev" aria-hidden="true">&#xe02b;</i></button>
+      </div>
+      <div class="tw-row">
+        <div class="tw-card"><span class="tw-glyph"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x=".625" y=".625" width="14.75" height="14.75" rx="4.708" stroke="currentColor" stroke-width="1.25"/><path d="M0 11.005h4.326a.23.23 0 0 0 .224-.168l1.652-5.674a.23.23 0 0 1 .224-.168h3.327a.23.23 0 0 1 .22.155l2.029 5.7a.23.23 0 0 0 .22.155H16" stroke="currentColor" stroke-width="1.25"/></svg></span><span class="tw-foot"><span class="bmb">Options<br>Seller</span><i class="i tw-chev" aria-hidden="true">&#xe02b;</i></span></div>
+        <div class="tw-card"><i class="i tw-glyph24" aria-hidden="true">&#xe000;</i><span class="tw-foot"><span class="bmb">AI Stock<br>Signals</span><i class="i tw-chev" aria-hidden="true">&#xe02b;</i></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stocks on the move (was "Switch symbol") -->
+  <div class="sheet tall" id="sh-switch" hidden role="dialog" aria-label="Stocks on the move">
+    <div class="sheet-title h3" style="padding-bottom:var(--sp-16)">Stocks on the move</div>
+    <div class="seg-chips bm" id="srcChips">
+      <button class="schip" data-src="lists">My Lists</button>
+      <button class="schip on" data-src="scan"><span class="live"></span>Stocks on the move</button>
+      <button class="schip" data-src="hold">Holdings</button>
+    </div>
+    <div class="tabs bl" id="swTabs"></div>
+    <div class="bb-row" id="bbRow">
+      <div class="bbtog bm" id="bbTog"><button class="on" data-d="bull"><span class="lbl">Bullish</span><i class="i up">&#xe36d;</i></button><button data-d="bear"><span class="lbl">Bearish</span><i class="i dn">&#xe36c;</i></button></div>
+      <button class="fbtn press" id="btnFilter" aria-label="Filter"><i class="i">&#xe1df;</i><span class="dot" id="fDot" hidden></span></button>
+    </div>
+    <div class="list" id="swList"></div>
+    <div class="tip bm" id="pvbTip" hidden style="left:24px;right:24px;top:150px"><div>Stocks up 2.5% or more intraday with the volume, VWAP, range position and 15-minute trend already behind the move.<br><br>Sorted by intraday change, biggest gainers first.</div><button class="x" id="tipX" aria-label="Close"><i class="i">&#xe103;</i></button></div>
+  </div>
+
+  <!-- Filter / Sort -->
+  <div class="sheet tall" id="sh-filter" hidden role="dialog" aria-label="Filter">
+    <div class="fs-head"><div class="seg inverse bm" id="fsSeg"><span class="thumb"></span><button class="on" data-v="filter">Filter</button><button data-v="sort">Sort by</button></div><button class="i" style="font-size:22px" data-close aria-label="Close">&#xe103;</button></div>
+    <div class="fs-body" id="fsFilter">
+      <div class="rail bm" id="rail"></div>
+      <div class="opts bm" id="opts"></div>
+    </div>
+    <div class="fs-body sortlist bm" id="fsSort" hidden style="flex-direction:column;padding:0;gap:0"></div>
+    <div class="footer2 bm"><button class="btn outline press" id="fClear">Clear all</button><button class="btn primary press" id="fApply" disabled>Apply</button></div>
+  </div>
+
+  <!-- P&L -->
+  <div class="sheet" id="sh-pnl" hidden role="dialog" aria-label="P&L">
+    <div style="padding:var(--sp-16) var(--sp-16) 0"><div class="seg inverse bm" id="pnlSeg" style="display:inline-flex"><span class="thumb"></span><button class="on" data-v="total">Total P&amp;L</button><button data-v="sc">Stock Scalper P&amp;L</button></div></div>
+    <div class="empty bl sec" style="padding:72px 32px" id="pnlEmpty">You have not taken any positions or scalper trades today</div>
+    <div style="padding:0 var(--sp-16) var(--sp-16)" id="pnlProtect"><button class="rowcard press bl"><i class="i">&#xe3c3;</i>Set P&amp;L Protect<i class="i chev">&#xe02b;</i></button></div>
+  </div>
+
+  <!-- Positions / Orders -->
+  <div class="sheet tall" id="sh-positions" hidden role="dialog" aria-label="Positions">
+    <div class="fs-head h4" style="font-weight:400">Positions</div>
+    <div class="empty bm sec" style="flex:1;justify-content:center">You have no stock or ETF positions today</div>
+  </div>
+  <div class="sheet tall" id="sh-orders" hidden role="dialog" aria-label="Orders">
+    <div class="fs-head h4" style="font-weight:400">Orders</div>
+    <div class="empty bm sec" style="flex:1;justify-content:center">You have no stock or ETF orders today</div>
+  </div>
+
+  <!-- More -->
+  <div class="sheet" id="sh-more" hidden role="dialog" aria-label="More">
+    <div class="plist">
+      <div style="display:flex;flex-direction:column;gap:var(--sp-12)"><span class="bm sec">Scalper Settings</span>
+        <button class="rowcard press" id="openDefaults"><i class="i">&#xe0dd;</i><span style="display:flex;flex-direction:column;gap:4px"><span class="bl">1-Tap order defaults</span><span class="bs sec">Configure your default order preferences</span></span><i class="i chev">&#xe02b;</i></button></div>
+      <div style="display:flex;flex-direction:column;gap:var(--sp-12)"><span class="bm sec">Learn</span>
+        <button class="rowcard press" id="openTour"><i class="i">&#xe05f;</i><span style="display:flex;flex-direction:column;gap:4px"><span class="bl">Guided tour</span><span class="bs sec">Step by step guide to use stock scalper</span></span><i class="i chev">&#xe02b;</i></button></div>
+    </div>
+  </div>
+
+  <!-- Order defaults -->
+  <div class="sheet tall" id="sh-defaults" hidden role="dialog" aria-label="Order Defaults">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:var(--sp-24) var(--sp-16) var(--sp-8)"><span class="h4" style="font-weight:400">Order Defaults</span><button class="i" style="font-size:20px" data-close aria-label="Close">&#xe103;</button></div>
+    <div class="tabs bl od-tabs" role="tablist"><button class="tab on" role="tab" data-odt="1" aria-selected="true">1-Tap orders</button><button class="tab" role="tab" data-odt="2" aria-selected="false">Order size</button></div>
+    <div class="od-pane" id="odPane1">
+      <div class="od-card">
+        <div class="od-line"><div class="tx"><span class="bm">1-Tap Buy/Sell</span><span class="bs sec" id="odDesc1">Sends market order to the exchange.</span></div><div class="seg subtle bm" id="odSeg1"><span class="thumb"></span><button class="on" data-v="m">Market</button><button data-v="l">Limit</button></div></div>
+        <div id="odLimit" hidden style="display:flex;flex-direction:column;gap:var(--sp-16)"><div class="od-div"></div>
+          <div class="od-line" style="align-items:flex-start"><div class="tx" style="max-width:230px"><span class="bm">Limit price</span><span class="bs sec">Sends buy limit order at the best offer price or sell limit order at the best bid price.</span></div><span class="bm" style="display:flex;gap:6px;align-items:center;white-space:nowrap">Best Bid/Offer<i class="i" style="font-size:14px">&#xe3a1;</i></span></div></div>
+      </div>
+      <div class="od-card"><div class="od-line"><div class="tx"><span class="bm">1-Tap product</span><span class="bs sec" id="odDesc3"></span></div><div class="seg subtle bm" id="odSeg3"><span class="thumb"></span><button class="on" data-v="mis">Intraday</button><button data-v="cnc">Delivery</button></div></div></div>
+      <div class="od-card"><div class="od-line"><div class="tx"><span class="bm">1-Tap Exit from Charts &amp; Positions</span><span class="bs sec" id="odDesc2">Sends market order to the exchange.</span></div><div class="seg subtle bm" id="odSeg2"><span class="thumb"></span><button class="on" data-v="m">Market</button><button data-v="l">Limit</button></div></div></div>
+    </div>
+    <!-- Order size: how the 1-Tap bar takes the order size. Quantity is the SAHI app default; ₹ Amount enters the trade value. -->
+    <div class="od-pane" id="odPane2" hidden>
+      <div class="od-card">
+        <div class="tx od-tx"><span class="bm">Trade in</span><span class="bs sec">Choose what you type on the 1-Tap bar and the order form.</span></div>
+        <div class="seg subtle bm od-full" id="odSeg4" role="radiogroup" aria-label="Trade in"><span class="thumb"></span><button class="on" data-v="qty">Quantity</button><button data-v="amt">&#8377; Amount</button></div>
+        <div class="od-div"></div>
+        <div class="od-kv bs"><span class="sec">You enter</span><span id="odIn"></span></div>
+        <div class="od-kv bs"><span class="sec">Worked out for you</span><span id="odOut"></span></div>
+        <div class="od-kv bs"><span class="sec">Example</span><span class="num" id="odEx"></span></div>
+      </div>
+      <p class="bs sec od-note" id="odNote"></p>
+    </div>
+    <div style="padding:var(--sp-16)"><button class="btn primary press bm" style="width:100%" id="odApply" disabled>Apply</button></div>
+  </div>
+
+  <!-- Order form (opened from the order bar). Same product pills and notices as the 1-tap bar. -->
+  <div class="sheet" id="sh-form" hidden role="dialog" aria-label="Order form">
+    <div class="of-head"><div style="min-width:0"><div class="bl" id="ofName"></div><div class="pr bs"><span class="num" id="ofLtp"></span><span class="num" id="ofChg"></span><span class="sec">NSE</span></div></div><button class="i" style="font-size:22px" data-close aria-label="Close">&#xe103;</button></div>
+    <div class="of-body">
+      <div class="seg inverse bm" id="ofSide"><span class="thumb"></span><button class="on" data-v="buy">Buy</button><button data-v="sell">Sell</button></div>
+      <div class="of-field"><span class="bs sec">Product</span><div class="seg subtle bs prodseg" id="ofProd" role="radiogroup" aria-label="Product"></div></div>
+      <div class="of-field"><span class="bs sec">Quantity</span><div class="stepper"><button id="ofMinus" aria-label="Decrease"><i class="i">&#xe09a;</i></button><input id="ofQty" class="num" inputmode="numeric" value="1" aria-label="Quantity"><button id="ofPlus" aria-label="Increase"><i class="i">&#xe0bc;</i></button></div></div>
+      <div class="of-field"><span class="bs sec">Price</span><div class="seg subtle bm" id="ofType"><span class="thumb"></span><button class="on" data-v="mkt">Market</button><button data-v="lmt">Limit</button></div></div>
+    </div>
+    <div class="of-foot">
+      <div class="notice bs" id="ofNotice" hidden role="status"></div>
+      <div class="of-sum bs"><span class="sec">Margin required</span><span class="bsb num" id="ofMargin"></span></div>
+      <button class="btn cta press bm" id="ofCta">Buy</button>
+    </div>
+  </div>
+
+  <!-- Tour intro -->
+  <div class="sheet" id="sh-tour" hidden role="dialog" aria-label="Guided tour">
+    <div class="sheet-title h3" style="padding:var(--sp-32) var(--sp-24) var(--sp-24)">Learn How to use Intraday Stock Scalper</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0 var(--sp-16) var(--sp-16)"><span class="bm sec">Select language</span><div class="seg subtle bm" id="langSeg"><span class="thumb"></span><button class="on">English</button><button>Hindi</button></div></div>
+    <div class="footer2 bm"><button class="btn outline press" data-close>Skip</button><button class="btn primary press" id="startTour">Start tour</button></div>
+  </div>
+
+  <div class="tour-hole" id="tourHole" hidden></div>
+  <div class="tour-tip" id="tourTip" hidden role="dialog" aria-live="polite">
+    <div class="hd"><span class="bl" id="ttTitle"></span><button class="i" style="font-size:18px;color:var(--text-inverse-primary)" id="ttClose" aria-label="Close tour">&#xe103;</button></div>
+    <div class="bm" id="ttBody"></div>
+    <div class="ft bm"><span class="ct" id="ttCount"></span><button class="tbtn ghost" id="ttPrev">Previous</button><button class="tbtn" id="ttNext">Next</button></div>
+  </div>
+
+  <!-- Market time (tap the clock): prototype-only picker to see each market window -->
+  <div class="sheet" id="sh-time" hidden role="dialog" aria-label="Market time">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:var(--sp-24) var(--sp-16) var(--sp-8)"><span class="h4" style="font-weight:400">Market time</span><button class="i" style="font-size:20px" data-close aria-label="Close">&#xe103;</button></div>
+    <div class="plist">
+      <label class="demo bs"><span class="sec">Market time</span>
+  <select id="demoTime">
+    <option value="live">Live clock</option>
+    <option value="r:548">Pre-open · 9:08 AM</option>
+    <option value="r:690" selected>Market open · 11:30 AM</option>
+    <option value="r:909">3:09 PM · early square-off in 1 min</option>
+    <option value="r:912">3:12 PM · after early square-off</option>
+    <option value="r:922">3:22 PM · after square-off</option>
+    <option value="r:960">4:00 PM · market closed</option>
+    <option value="m:1090">Muhurat pre-open · 6:10 PM</option>
+    <option value="m:1110">Muhurat · 6:30 PM</option>
+    <option value="m:1137">Muhurat · 6:57 PM</option>
+  </select>      </label>
+    </div>
+  </div>
+
+  <div class="toast bs" id="toast"></div>
+</div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

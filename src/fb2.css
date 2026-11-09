@@ -1,0 +1,48 @@
+/* Order bar + order form (was Feedback v2, now always on via body.fb2). SAHI Base · DLS tokens only. */
+body:not(.fb2) .fb-on, body.fb2 .fb-off{display:none!important}
+
+/* 1-Tap panel: wider middle column for a rupee value */
+.fb-row{grid-template-columns:1fr 1.35fr 1fr;align-items:center}
+.bs-btn:disabled{opacity:.4;cursor:default}
+.fb-step{padding:0 var(--sp-4)}
+.fb-step button{width:28px;height:28px;flex:none}
+.fb-in{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:text}
+.fb-in input{width:100%;border:0;background:none;text-align:center;color:var(--text-primary);padding:0;outline:none}
+.fb-sum{display:flex;align-items:center;gap:var(--sp-8);padding:var(--sp-8) var(--sp-4) 0}
+.fb-sumtx{flex:1;min-width:0;text-align:center;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fb-sumtx.neg{color:var(--text-negative)}
+.fb-sumpad{width:28px;flex:none} /* balances the leverage badge so the summary stays centred */
+/* Leverage badge (approximation of DLS Leverage badge) */
+.lev-badge{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:var(--r-4);background:var(--surface-brand-subtle);color:var(--icon-brand);flex:none;vertical-align:middle}
+
+/* Order form sheet */
+.fbf{height:calc(100% - 52px)}
+.fbf-head{display:flex;align-items:center;gap:var(--sp-8);padding:var(--sp-16);border-bottom:var(--bw-hair) solid var(--border-L1)}
+.fbf-head>div:first-child{flex:1}
+.fbf-head .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fbf-pr{display:flex;gap:var(--sp-8);margin-top:var(--sp-4)}
+.fbf-tag{height:18px;display:inline-flex;align-items:center;padding:0 6px;border-radius:var(--r-4);background:var(--surface-L2);color:var(--text-secondary)}
+.fbf-x{font-size:22px;width:32px;height:32px;display:grid;place-items:center}
+.fbf-body{flex:1;overflow:auto;padding:var(--sp-16);display:flex;flex-direction:column;gap:var(--sp-16)}
+.fbf-side{display:flex}
+.fbf-side button{flex:1;height:36px}
+#ffSide:has(button[data-v="buy"].on) .thumb{background:var(--surface-positive-default)}
+#ffSide:has(button[data-v="sell"].on) .thumb{background:var(--surface-negative-default)}
+.fbf-line{display:flex;align-items:center;justify-content:space-between}
+.fbf-field{display:flex;flex-direction:column;gap:var(--sp-8);border:var(--bw-hair) solid var(--border-L1);border-radius:var(--r-12);padding:var(--sp-12) var(--sp-16);transition:border-color 150ms ease}
+.fbf-field:focus-within{border-color:var(--border-L2)}
+.fbf-field input{border:0;background:none;padding:0;color:var(--text-primary);outline:none;width:100%}
+.fbf-amt input{font:500 32px/40px var(--sans)}
+.fbf-amt-top{display:flex;justify-content:space-between;align-items:center}
+.fbf-link{color:var(--text-primary);text-decoration:underline;text-underline-offset:3px}
+.fbf-chips{display:flex;gap:var(--sp-8)}
+.fbf-chips .chip{border:var(--bw-hair) solid var(--border-L1)}
+.fbf-kv{display:flex;flex-direction:column;gap:var(--sp-12);background:var(--surface-L2);border-radius:var(--r-12);padding:var(--sp-16)}
+.fbf-kv>div:not(.fbf-div){display:flex;justify-content:space-between;align-items:center;gap:var(--sp-8)}
+.fbf-kv>div>span:first-child{display:inline-flex;align-items:center;gap:6px}
+.fbf-div{height:1px;background:var(--border-L1)}
+.fbf-notice{display:flex;gap:var(--sp-8);align-items:center;padding:var(--sp-12);border-radius:var(--r-12);background:var(--surface-negative-subtle);color:var(--text-negative)}
+.fbf-notice .i{font-size:16px}
+.fbf-ref{margin:0;text-align:center}
+.fbf-foot{display:flex;flex-direction:column;align-items:center;gap:var(--sp-8);padding:var(--sp-12) var(--sp-16) var(--sp-16);border-top:var(--bw-hair) solid var(--border-L1)}
+.fbf-foot .bs-btn{flex-direction:row}

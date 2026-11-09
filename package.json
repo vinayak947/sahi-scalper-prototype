@@ -1,0 +1,15 @@
+{
+  "name": "sahi-scalper-prototype",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "bash scripts/deploy.sh"
+  },
+  "devDependencies": {
+    "vite": "^8.0.5"
+  }
+}
