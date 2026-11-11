@@ -512,7 +512,7 @@ function barProd(){
   const picked=r.ps.find(p=>p.k===st.prod&&p.k!=="mis"); // Delivery as the 1-tap default, or a product picked in the order form
   if(picked) return {prod:picked,label:picked.label+(picked.lev>1?` ${picked.lev}x`:""),notice:null};
   if(mis.block) return {prod:null,label:`Intraday ${mis.lev}x`,notice:{tone:"attentive",text:mis.block.text}};
-  return {prod:mis,label:`Intraday ${mis.lev}x`,notice:null};
+  return {prod:mis,label:`Intraday ${mis.lev}x`,notice:mis.info?{tone:"neutral",text:mis.info.text}:null}; // pre-open: orders on, heads-up only
 }
 const ALERT="&#xe001;", CLOCK="&#xe17d;", INFO="&#xe065;";
 function renderProducts(seg,note,k,want,onPick){

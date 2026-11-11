@@ -103,6 +103,7 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
   $('#phone').insertAdjacentHTML('beforeend', `
   <div class="sheet kp" id="sh-kp" hidden role="dialog" aria-label="Order size">
     <div class="kp-top">
+      <div class="kp-prod" id="kpProd"><span class="h3" id="kpProdName"></span></div>
       <div class="seg subtle bm kp-unit" id="kpUnit" role="radiogroup" aria-label="Trade in"><span class="thumb"></span><button data-v="qty">Quantity</button><button data-v="amt">&#8377; Amount</button></div>
       <div class="kp-step-wrap">
         <span class="bs sec" id="kpLbl"></span>
@@ -122,21 +123,26 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
     // Qty / ₹ switch shows here only when the prototype setting puts it on the bar
     const unit = $('#kpUnit'); unit.hidden = fb.switchAt !== 'bar'
     unit.querySelectorAll('button').forEach(b => { const on = b.dataset.v === kp.input; b.classList.toggle('on', on); b.setAttribute('aria-checked', on) }); if (!unit.hidden) placeThumb(unit)
-    $('#kpLbl').textContent = amt ? 'Amount you put in' : 'Quantity'
+    // Product header (user, 11 Nov): this sheet must shout that the order is INTRADAY at the stock's leverage
+    const pr = product(), mis = pr?.k === 'mis'
+    $('#kpProd').hidden = !pr
+    $('#kpProdName').textContent = mis ? 'Intraday order' : 'Delivery order'
+    $('#kpLbl').textContent = amt ? (mis ? 'Intraday margin you put in' : 'Amount you invest') : (mis ? 'Shares to trade intraday' : 'Shares')
     $('#kpVal').textContent = amt ? inr(kp.amt) : kp.qty.toLocaleString('en-IN')
     $('#kpChips').hidden = !amt
     $('#kpChips').innerHTML = AMT_PICKS.map(v => `<button class="chip bs press num${kp.amt === v ? ' on' : ''}" data-set="${v}">${inr(v)}</button>`).join('')
     // margin first: what you put in → × leverage → trade value → whole shares
     const row = (k, v, cls = '') => `<div class="${cls}"><span class="sec">${k}</span><span class="num">${v}</span></div>`
     $('#kpKv').innerHTML = amt
-      ? row('Margin you put in', inr(kp.amt)) + row(`Trade value at ${L}x`, inr(kp.amt * L)) + row('Shares at ' + inr(p, 2), short ? 'Below 1' : sh(c.q), 'em')
-      : row('Trade value', inr(c.value)) + row(`Margin at ${L}x`, inr(c.margin), 'em')
+      ? (mis ? row('Your intraday margin', inr(kp.amt)) + row(`Trade value with ${L}x intraday leverage`, inr(kp.amt * L)) : row('You invest', inr(kp.amt)))
+        + row('Shares at ' + inr(p, 2), short ? 'Below 1' : sh(c.q), 'em')
+      : row('Trade value', inr(c.value)) + row(mis ? `Intraday margin at ${L}x` : 'You pay (full value)', inr(c.margin), 'em')
     const n = $('#kpNote'), over = c.margin > FUNDS
     n.classList.toggle('neg', short || over)
     n.hidden = false
-    if (short) n.textContent = amt ? `Put in at least ${inr(c.min)} for 1 share at ${L}x.` : 'Enter at least 1 share.'
+    if (short) n.textContent = amt ? `Put in at least ${inr(c.min)} for 1 share${mis ? ` at ${L}x intraday` : ''}.` : 'Enter at least 1 share.'
     else if (over) n.textContent = `Margin is ${inr(c.margin - FUNDS)} more than your available funds (${inr(FUNDS)}).`
-    else if (amt && c.left >= 0.5) n.textContent = `Uses ${inr(c.margin)} of it. ${inr(c.left)} stays unused: not enough for 1 more share. Shares follow the live price and never go over ${inr(kp.amt)}.`
+    else if (amt && c.left >= 0.5) n.textContent = `Uses ${inr(c.margin)}. ${inr(c.left)} is left over, less than 1 share. Never goes over ${inr(kp.amt)} as the price moves.`
     else n.hidden = true
     $('#kpApply').disabled = short
   }
