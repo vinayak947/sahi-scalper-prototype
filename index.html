@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>SAHI Stock Scalper</title>
     <link rel="icon" href="/sahi-scalper-prototype/assets/logo.png" />
-    <script type="module" crossorigin src="/sahi-scalper-prototype/assets/index-Gv_RC-K5.js"></script>
-    <link rel="stylesheet" crossorigin href="/sahi-scalper-prototype/assets/index-D1bj1ZGM.css">
+    <script type="module" crossorigin src="/sahi-scalper-prototype/assets/index-CdophHWr.js"></script>
+    <link rel="stylesheet" crossorigin href="/sahi-scalper-prototype/assets/index-2SP-aAIP.css">
   </head>
   <body>
 <div class="phone" id="phone">
@@ -51,21 +51,14 @@
     </nav>
   </section>
 
-  <!-- STOCKS ON THE MOVE · full page. Stock Scalper and Home "View all" both land here. -->
+  <!-- STOCKS ON THE MOVE · full page. Trade → Stocks Scalper and Home "View all" land here.
+       The content is the ONE Stocks on the move component (#som); it is moved into #somPage here, or into #somSheet in the bottom sheet. -->
   <section class="screen" id="scanAll" hidden>
     <header class="appbar"><!-- DLS App bar (SAHI Components · DLS 210:3769): Leading=back, Align=start -->
       <button class="appbar-btn" id="saBack" aria-label="Back" title="Back"><i class="i">&#xe02a;</i></button>
-      <h1 class="appbar-title" id="saTitle">Stocks on the move</h1>
-      <div class="appbar-actions"><button class="appbar-btn" data-filter aria-label="Filter" title="Filter"><i class="i">&#xe1df;</i><span class="dot" hidden></span></button></div>
+      <h1 class="appbar-title">Select stock to scalp</h1>
     </header>
-    <div class="tabs bm sc-tabs"></div>
-    <div class="sa-tools">
-      <div class="seg subtle" id="saView"><span class="thumb"></span><button data-v="list" aria-label="List view"><i class="i">&#xe07b;</i></button><button class="on" data-v="chart" aria-label="Chart view"><i class="i">&#xe107;</i></button><button data-v="table" aria-label="Table view"><i class="i">&#xe072;</i></button></div>
-      <span class="sa-chip bs" data-chartonly><i class="i">&#xe3aa;</i><i class="i">&#xe170;</i></span><span class="sa-chip bs" data-chartonly>1D<i class="i">&#xe170;</i></span>
-      <div class="bbtog bm sc-bb" style="margin-left:auto"><button class="on" data-d="bull"><span class="lbl">Bullish</span><i class="i up">&#xe36d;</i></button><button data-d="bear"><span class="lbl">Bearish</span><i class="i dn">&#xe36c;</i></button></div>
-    </div>
-    <div class="sa-body" id="saBody"></div>
-    <div class="tip bm sc-tip" hidden><div class="tx"></div><button class="x" aria-label="Close"><i class="i">&#xe103;</i></button></div>
+    <div class="som-host" id="somPage"></div>
   </section>
 
   <!-- STOCK SCALPER -->
@@ -134,7 +127,7 @@
       <div class="navpanel" id="navPanel">
         <span class="navcount bx num" id="navCount" hidden></span><!-- "3/7" counter removed from the strip (not needed); kept hidden so main.js can still write to it -->
         <div class="pills" id="pills" role="listbox" aria-label="Stocks in this list"><div class="track" id="pillTrack"></div></div>
-        <button class="obtn press" id="btnList" aria-label="Stocks on the move"><i class="i">&#xe07b;</i></button>
+        <button class="obtn press" id="btnList" aria-label="Select stock to scalp"><i class="i">&#xe07b;</i></button>
       </div>
     </div>
     <div class="card orderpanel" id="orderPanel">
@@ -171,24 +164,41 @@
     </div>
   </div>
 
-  <!-- Stocks on the move (was "Switch symbol") -->
-  <div class="sheet tall" id="sh-switch" hidden role="dialog" aria-label="Stocks on the move">
-    <div class="sheet-title h3" style="padding-bottom:var(--sp-16)">Stocks on the move</div>
-    <div class="seg-chips bm" id="srcChips">
-      <button class="schip" data-src="lists">My Lists</button>
-      <button class="schip on" data-src="scan"><span class="live"></span>Stocks on the move</button>
-      <button class="schip" data-src="hold">Holdings</button>
-    </div>
-    <div class="tabs bm" id="swTabs"></div>
-    <div class="bb-row" id="bbRow">
-      <div class="seg subtle" id="swView" role="radiogroup" aria-label="View"><span class="thumb"></span><button class="on" data-v="list" aria-label="List view"><i class="i">&#xe07b;</i></button><button data-v="chart" aria-label="Chart view"><i class="i">&#xe107;</i></button><button data-v="table" aria-label="Table view"><i class="i">&#xe072;</i></button></div>
-      <div class="bb-r">
-        <div class="bbtog bm" id="bbTog"><button class="on" data-d="bull"><span class="lbl">Bullish</span><i class="i up">&#xe36d;</i></button><button data-d="bear"><span class="lbl">Bearish</span><i class="i dn">&#xe36c;</i></button></div>
-        <button class="fbtn press" id="btnFilter" aria-label="Filter"><i class="i">&#xe1df;</i><span class="dot" id="fDot" hidden></span></button>
+  <!-- Stocks on the move · bottom sheet (the chart's list icon). Same #som component as the full page; only the host differs. -->
+  <div class="sheet tall" id="sh-switch" hidden role="dialog" aria-label="Select stock to scalp">
+    <div class="sheet-title h3" style="padding-bottom:var(--sp-16)">Select stock to scalp</div>
+    <div class="som-host" id="somSheet">
+      <!-- ONE Stocks on the move component: source chips · scanner/list tabs · view + Bullish/Bearish + filter · list/chart/table -->
+      <div class="som" id="som">
+        <div class="seg-chips bm" id="srcChips">
+          <button class="schip" data-src="lists">My Lists</button>
+          <button class="schip on" data-src="scan"><span class="live"></span>Stocks on the move</button>
+          <button class="schip" data-src="hold">Holdings</button>
+        </div>
+        <div class="tabs bm" id="swTabs"></div>
+        <div class="bb-row" id="bbRow">
+          <div class="bb-l"><div class="seg subtle" id="swView" role="radiogroup" aria-label="View"><span class="thumb"></span><button data-v="list" aria-label="List view"><i class="i">&#xe07b;</i></button><button class="on" data-v="chart" aria-label="Chart view"><i class="i">&#xe107;</i></button><button data-v="table" aria-label="Table view"><i class="i">&#xe072;</i></button></div><div class="cset bm" id="chartSet" hidden><!-- Chart view settings (prod: Watchlist → chart view): chart type ▾ | time range ▾ -->
+            <button class="press" id="ctBtn" aria-label="Chart type: Area"><span class="ct-ic" id="ctIc"></span><i class="i chev" aria-hidden="true">&#xe170;</i></button><span class="cset-div" aria-hidden="true"></span><button class="press" id="trBtn" aria-label="Time range: 1D"><span id="trTx">1D</span><i class="i chev" aria-hidden="true">&#xe170;</i></button>
+          </div></div>
+          <div class="bb-r">
+            <div class="bbtog bm" id="bbTog"><button class="on" data-d="bull"><span class="lbl">Bullish</span><i class="i up">&#xe36d;</i></button><button data-d="bear"><span class="lbl">Bearish</span><i class="i dn">&#xe36c;</i></button></div>
+            <button class="fbtn press" id="btnFilter" aria-label="Filter"><i class="i">&#xe1df;</i><span class="dot" id="fDot" hidden></span></button>
+          </div>
+        </div>
+        <div class="list" id="swList"></div>
+        <div class="tip bm" id="pvbTip" hidden><div class="tx">Stocks up 2.5% or more intraday with the volume, VWAP, range position and 15-minute trend already behind the move.<br><br>Sorted by intraday change, biggest gainers first.</div><button class="x" id="tipX" aria-label="Close"><i class="i">&#xe103;</i></button></div>
       </div>
     </div>
-    <div class="list" id="swList"></div>
-    <div class="tip bm" id="pvbTip" hidden style="left:24px;right:24px;top:150px"><div>Stocks up 2.5% or more intraday with the volume, VWAP, range position and 15-minute trend already behind the move.<br><br>Sorted by intraday change, biggest gainers first.</div><button class="x" id="tipX" aria-label="Close"><i class="i">&#xe103;</i></button></div>
+  </div>
+
+  <!-- Chart type / Time range: the two chart-view settings sheets, as in prod (Watchlist → chart view) -->
+  <div class="sheet" id="sh-ctype" hidden role="dialog" aria-label="Chart type">
+    <div class="cv-head"><span class="h4">Chart type</span></div>
+    <div class="cv-types bm" id="ctList" role="radiogroup" aria-label="Chart type"></div>
+  </div>
+  <div class="sheet" id="sh-trange" hidden role="dialog" aria-label="Time range">
+    <div class="cv-head"><span class="h4">Time Range</span><button class="i cv-x" data-close aria-label="Close">&#xe103;</button></div>
+    <div class="cv-ranges bm" id="trList" role="radiogroup" aria-label="Time range"></div>
   </div>
 
   <!-- Filter / Sort -->
@@ -242,7 +252,7 @@
       <div class="od-card"><div class="od-line"><div class="tx"><span class="bm">1-Tap product</span><span class="bs sec" id="odDesc3"></span></div><div class="seg subtle bm" id="odSeg3"><span class="thumb"></span><button class="on" data-v="mis">Intraday</button><button data-v="cnc">Delivery</button></div></div></div>
       <div class="od-card"><div class="od-line"><div class="tx"><span class="bm">1-Tap Exit from Charts &amp; Positions</span><span class="bs sec" id="odDesc2">Sends market order to the exchange.</span></div><div class="seg subtle bm" id="odSeg2"><span class="thumb"></span><button class="on" data-v="m">Market</button><button data-v="l">Limit</button></div></div></div>
     </div>
-    <!-- Order size: how the 1-Tap bar takes the order size. Quantity is the SAHI app default; ₹ Amount enters the trade value. -->
+    <!-- Order size: how the 1-Tap bar takes the order size. Quantity is the SAHI app default; ₹ Amount is the money you put in (margin). -->
     <div class="od-pane" id="odPane2" hidden>
       <div class="od-card">
         <div class="tx od-tx"><span class="bm" id="odSizeTitle">Trade in quantity</span><span class="bs sec" id="odSizeDesc"></span></div>
@@ -251,7 +261,7 @@
         <div class="od-ex" aria-live="polite">
           <div class="od-ex-in"><span class="bx sec">You type</span><span class="bm num" id="odExIn"></span></div>
           <div class="od-ex-out"><span class="bx sec" id="odExK1"></span><span class="bm num" id="odExV1"></span></div>
-          <div class="od-ex-out"><span class="bx sec od-ex-k">Margin<span class="lev-badge bxb num" id="odExLev"></span></span><span class="bm num" id="odExV2"></span></div>
+          <div class="od-ex-out"><span class="bx sec od-ex-k"><span id="odExK2">Margin</span><span class="lev-badge bxb num" id="odExLev"></span></span><span class="bm num" id="odExV2"></span></div>
         </div>
       </div>
     </div>
@@ -290,7 +300,7 @@
 
   <!-- Market time (tap the clock): prototype-only picker to see each market window -->
   <div class="sheet" id="sh-time" hidden role="dialog" aria-label="Market time">
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:var(--sp-24) var(--sp-16) var(--sp-8)"><span class="h4" style="font-weight:400">Market time</span><button class="i" style="font-size:20px" data-close aria-label="Close">&#xe103;</button></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:var(--sp-24) var(--sp-16) var(--sp-8)"><span class="h4" style="font-weight:400">Prototype settings</span><button class="i" style="font-size:20px" data-close aria-label="Close">&#xe103;</button></div>
     <div class="plist">
       <label class="demo bs"><span class="sec">Market time</span>
   <select id="demoTime">
@@ -301,10 +311,12 @@
     <option value="r:912">3:12 PM · after early square-off</option>
     <option value="r:922">3:22 PM · after square-off</option>
     <option value="r:960">4:00 PM · market closed</option>
-    <option value="m:1090">Muhurat pre-open · 6:10 PM</option>
-    <option value="m:1110">Muhurat · 6:30 PM</option>
-    <option value="m:1137">Muhurat · 6:57 PM</option>
   </select>      </label>
+      <!-- Where Qty / ₹ Amount is switched: Order Defaults → Order size, or the keypad sheet on the order bar -->
+      <label class="demo bs"><span class="sec">Qty / ₹ switch</span>
+        <select id="demoSwitch"><option value="bar" selected>On the order bar</option><option value="defaults">In Order defaults</option></select></label>
+      <label class="demo bs"><span class="sec">Open position</span>
+        <select id="demoPos"><option value="0" selected>None</option><option value="10">Bought 10 shares</option></select></label>
     </div>
   </div>
 
