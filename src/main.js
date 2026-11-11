@@ -57,7 +57,7 @@ function bindSeg(seg,cb){seg.querySelectorAll("button").forEach(b=>b.addEventLis
 // ---------- home / trade ----------
 $("#navTrade").onclick=()=>showSheet("trade");
 // Founder feedback (5 Nov): Stock Scalper opens on a full page of intraday scanners; the chart comes only after a stock is picked.
-$("#openStockScalper").onclick=()=>hideSheet("trade",openSomPage);
+$("#openStockScalper").onclick=()=>hideSheet("trade",()=>openSomPage("all"));
 
 // ---------- Stocks on the move: ONE component (#som) ----------
 // The same block of UI, state and render code is used everywhere. Only its host changes:
@@ -67,9 +67,14 @@ $("#openStockScalper").onclick=()=>hideSheet("trade",openSomPage);
 const tabsEl=$("#swTabs"), listEl=$("#swList");
 let somHost="sheet", somFrom="home";
 function openSom(host){ sw.view=SOM_DEFAULT_VIEW; listEl.scrollTop=0; mountSom(host) } // every fresh open → chart view
-function mountSom(host){ const h=$(host==="page"?"#somPage":"#somSheet"), el=$("#som"); if(el.parentElement!==h) h.appendChild(el); somHost=host; if(host!=="page") somCoach.hide(); $("#pvbTip").hidden=true; renderSwitch() }
-// One title everywhere (sheet + page, every entry point): "Select stock to scalp", set in index.html.
-function openSomPage(){
+// Two states of the page (same component, same layout):
+//   "all"  — Trade → Stock Scalper: "Select stock to scalp", with the My Lists / Intraday scanners / Holdings chips (the sheet is always this state)
+//   "scan" — Home → Intraday scanner → View all: "Intraday scanners", scanners only, no My Lists / Holdings (prod: Home View all lands on the scanner page)
+let somMode="all";
+function mountSom(host){ const h=$(host==="page"?"#somPage":"#somSheet"), el=$("#som"); if(el.parentElement!==h) h.appendChild(el); somHost=host; if(host!=="page") somCoach.hide(); $("#pvbTip").hidden=true;
+  const only=host==="page"&&somMode==="scan"; $("#srcChips").hidden=only; if(only) st.src="scan"; renderSwitch() }
+function openSomPage(mode="all"){
+  somMode=mode; $("#scanAll .appbar-title").textContent=mode==="scan"?"Intraday scanners":"Select stock to scalp";
   const prev=$$(".screen").find(x=>!x.hidden&&x.id!=="scanAll"); somFrom=prev?prev.id:"home"; // Back returns to the screen that opened it
   $$(".screen").forEach(s=>s.hidden=true); $("#scanAll").hidden=false; openSom("page"); requestAnimationFrame(()=>placeThumb($("#swView"))); somCoach.maybeShow();
 }
@@ -586,7 +591,7 @@ $("#ttClose").onclick=endTour;
 const defF=()=>{const t=fState;resetF();const r=serF();fState=t;return JSON.stringify(r)};
 const renderSC=initScanners({$,$$,S,SCAN,st,fmt,sign,pct,chgTxt,sorted,bindSeg,placeThumb,enterScalper,
   openFilter:()=>{sortDraft=st.sort;renderFilter();showSheet("filter")}, filterDirty:()=>st.sort!=="popular"||fApplied!==defF(),
-  appliedFilter:()=>JSON.parse(fApplied), inWatch, toggleWatch, setBack:s=>{scBack=s;$(s).hidden=true}, openPage:()=>openSomPage()});
+  appliedFilter:()=>JSON.parse(fApplied), inWatch, toggleWatch, setBack:s=>{scBack=s;$(s).hidden=true}, openPage:()=>openSomPage("scan")});
 
 // Watchlist page (Home → Watchlist in the bottom nav)
 const WLP=initWatchlist({$,$$,S,LISTS,fmt,sign,showSheet,hideSheet,toast,bindSeg,placeThumb,enterScalper,st,
@@ -607,7 +612,7 @@ initLive({$$,books:[S,IDX],fmt,onTick(moved){
 
 // boot: open on Home; #scalper / #scanner jump straight in
 function boot(){const h=location.hash.slice(1);
-  if(h.startsWith("scalper")){st.group=[...SCAN[st.scan][st.dir]]; enterScalper(st.group[0])} else if(h.startsWith("scanner")){openSom("sheet"); showSheet("switch")} else if(h.startsWith("stocks")) openSomPage(); else if(h.startsWith("watchlist")) WLP.open()}
+  if(h.startsWith("scalper")){st.group=[...SCAN[st.scan][st.dir]]; enterScalper(st.group[0])} else if(h.startsWith("scanner")){openSom("sheet"); showSheet("switch")} else if(h.startsWith("stocks")) openSomPage("all"); else if(h.startsWith("watchlist")) WLP.open()}
 $("#demoTime").onchange=e=>setDemo(e.target.value);
 $("#demoSwitch").onchange=e=>fbHook.setSwitchAt(e.target.value);
 $("#demoPos").onchange=e=>fbHook.setPos(+e.target.value);
