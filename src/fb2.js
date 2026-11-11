@@ -13,10 +13,9 @@ import './fb2.css'
 
 const FUNDS = 25000 // sample available funds
 const AMT_STEP = 100
-const AMT_PICKS = [500, 1000, 5000, 10000] // round numbers people trade with
 const BACKSPACE = ''
 
-export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast, bindSeg, placeThumb, price, levOf, product, mountProducts, setQty, enterScalper }) {
+export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast, bindSeg, placeThumb, price, levOf, product, barNotice, mountProducts, setQty, enterScalper }) {
   const fb = {
     def: 'qty',        // the saved choice: 'qty' | 'amt'
     input: 'qty',      // what the bar and form use right now (the form can switch it for one order)
@@ -104,15 +103,18 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
   <div class="sheet kp" id="sh-kp" hidden role="dialog" aria-label="Order size">
     <div class="kp-top">
       <div class="kp-prod" id="kpProd"><span class="h3" id="kpProdName"></span></div>
-      <div class="seg subtle bm kp-unit" id="kpUnit" role="radiogroup" aria-label="Trade in"><span class="thumb"></span><button data-v="qty">Quantity</button><button data-v="amt">&#8377; Amount</button></div>
-      <div class="kp-step-wrap">
-        <span class="bs sec" id="kpLbl"></span>
-        <div class="stepper kp-step"><button id="kpMinus" class="press" aria-label="Decrease"><i class="i">&#xe09a;</i></button><output class="num kp-val" id="kpVal" aria-live="polite"></output><button id="kpPlus" class="press" aria-label="Increase"><i class="i">&#xe0bc;</i></button></div>
+      <!-- Rows follow the live SAHI order form (968): label left, control right — like its "Order type" and "Quantity" rows -->
+      <div class="of-field kp-row" id="kpUnitRow"><span class="bm sec">Trade in</span>
+        <div class="seg subtle bm kp-unit" id="kpUnit" role="radiogroup" aria-label="Trade in"><span class="thumb"></span><button data-v="qty">Quantity</button><button data-v="amt">&#8377; Amount</button></div></div>
+      <div class="of-field kp-row kp-step-wrap"><span class="bm sec" id="kpLbl"></span>
+        <!-- Quantity: DLS Stepper field (filled pill, − value +) -->
+        <div class="stepper kp-step" id="kpStep"><button id="kpMinus" class="press" aria-label="Decrease"><i class="i">&#xe09a;</i></button><output class="num kp-val" id="kpVal" aria-live="polite"></output><button id="kpPlus" class="press" aria-label="Increase"><i class="i">&#xe0bc;</i></button></div>
+        <!-- ₹ Amount: DLS Number field (outlined, ₹ prefix, right-aligned, no step buttons), shown focused like the live Trigger price box -->
+        <div class="kp-numf" id="kpNumf" role="textbox" aria-label="Amount in rupees"><span class="kp-numf-pre">&#8377;</span><output class="num kp-numf-val" id="kpAmtVal" aria-live="polite"></output><span class="kp-caret" aria-hidden="true"></span></div>
       </div>
-      <div class="fbf-chips kp-chips" id="kpChips"></div>
       <div class="kp-kv bs" id="kpKv" aria-live="polite"></div>
-      <div class="bx kp-note" id="kpNote" hidden></div>
     </div>
+    <div class="bs kp-strip" id="kpNote" hidden></div>
     <div class="kp-pad" id="kpPad">${['1','2','3','4','5','6','7','8','9','00','0','del'].map(k => `<button class="press ${k === 'del' ? 'i' : 'h4'}" data-k="${k}"${k === 'del' ? ' aria-label="Delete"' : ''}>${k === 'del' ? BACKSPACE : k}</button>`).join('')}</div>
     <div class="kp-foot"><button class="btn primary bm press" id="kpApply">Apply</button></div>
   </div>`)
@@ -121,16 +123,16 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
   function renderKp() {
     const p = price(), L = levFor(kp.lev), amt = kp.input === 'amt', c = calcWith(p, kp.input, kpSize(), L), short = c.q < 1
     // Qty / ₹ switch shows here only when the prototype setting puts it on the bar
-    const unit = $('#kpUnit'); unit.hidden = fb.switchAt !== 'bar'
-    unit.querySelectorAll('button').forEach(b => { const on = b.dataset.v === kp.input; b.classList.toggle('on', on); b.setAttribute('aria-checked', on) }); if (!unit.hidden) placeThumb(unit)
+    const unit = $('#kpUnit'); $('#kpUnitRow').hidden = fb.switchAt !== 'bar'
+    unit.querySelectorAll('button').forEach(b => { const on = b.dataset.v === kp.input; b.classList.toggle('on', on); b.setAttribute('aria-checked', on) }); if (fb.switchAt === 'bar') placeThumb(unit)
     // Product header (user, 11 Nov): this sheet must shout that the order is INTRADAY at the stock's leverage
     const pr = product(), mis = pr?.k === 'mis'
     $('#kpProd').hidden = !pr
     $('#kpProdName').textContent = mis ? 'Intraday order' : 'Delivery order'
     $('#kpLbl').textContent = amt ? (mis ? 'Intraday margin you put in' : 'Amount you invest') : (mis ? 'Shares to trade intraday' : 'Shares')
-    $('#kpVal').textContent = amt ? inr(kp.amt) : kp.qty.toLocaleString('en-IN')
-    $('#kpChips').hidden = !amt
-    $('#kpChips').innerHTML = AMT_PICKS.map(v => `<button class="chip bs press num${kp.amt === v ? ' on' : ''}" data-set="${v}">${inr(v)}</button>`).join('')
+    $('#kpVal').textContent = kp.qty.toLocaleString('en-IN')
+    $('#kpAmtVal').textContent = kp.amt ? Math.round(kp.amt).toLocaleString('en-IN') : ''
+    $('#kpStep').hidden = amt; $('#kpNumf').hidden = !amt // Quantity → stepper; ₹ Amount → number field, no −/+ (user, 11 Nov)
     // margin first: what you put in → × leverage → trade value → whole shares
     const row = (k, v, cls = '') => `<div class="${cls}"><span class="sec">${k}</span><span class="num">${v}</span></div>`
     $('#kpKv').innerHTML = amt
@@ -143,6 +145,7 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
     if (short) n.textContent = amt ? `Put in at least ${inr(c.min)} for 1 share${mis ? ` at ${L}x intraday` : ''}.` : 'Enter at least 1 share.'
     else if (over) n.textContent = `Margin is ${inr(c.margin - FUNDS)} more than your available funds (${inr(FUNDS)}).`
     else if (amt && c.left >= 0.5) n.textContent = `Uses ${inr(c.margin)}. ${inr(c.left)} is left over, less than 1 share. Never goes over ${inr(kp.amt)} as the price moves.`
+    else if (barNotice?.()) n.textContent = barNotice().text // market state (AMO / pre-open), like the live order form's strip
     else n.hidden = true
     $('#kpApply').disabled = short
   }
@@ -160,7 +163,6 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
   $('#kpPad').addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (b) key(b.dataset.k) })
   $('#kpMinus').onclick = () => { kp.fresh = false; kp.input === 'amt' ? kpSet((Math.round(kp.amt / AMT_STEP) - 1) * AMT_STEP) : kpSet(kp.qty - 1) }
   $('#kpPlus').onclick = () => { kp.fresh = false; kp.input === 'amt' ? kpSet((Math.round(kp.amt / AMT_STEP) + 1) * AMT_STEP) : kpSet(kp.qty + 1) }
-  $('#kpChips').addEventListener('click', e => { const b = e.target.closest('[data-set]'); if (b) { kp.fresh = true; kpSet(+b.dataset.set) } })
   $('#kpUnit').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b || b.dataset.v === kp.input) return
     const c = calcWith(price(), kp.input, kpSize(), levFor(kp.lev)) // carry the size across

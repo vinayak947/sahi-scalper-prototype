@@ -49,20 +49,19 @@ body:not(.fb2) .fb-on, body.fb2 .fb-off{display:none!important}
 
 /* Order size keypad sheet (tap the size on the bar): Qty / ₹ switch (prototype setting), stepper, breakdown, keypad, Apply */
 .kp-top{display:flex;flex-direction:column;gap:var(--sp-12);padding:var(--sp-24) var(--sp-16) var(--sp-8)}
-.kp-unit{display:flex}.kp-unit button{flex:1}
-.kp-unit[hidden],.kp-line[hidden],.kp-chips[hidden]{display:none}
+.kp-row[hidden],.kp-line[hidden],.kp-step[hidden],.kp-numf[hidden]{display:none}
 .kp-line{display:flex;align-items:center;justify-content:space-between}
 .kp-line .seg button{height:28px;padding:0 var(--sp-16)}
-.kp-step-wrap{display:flex;flex-direction:column;align-items:center;gap:var(--sp-8)}
-.kp-step{width:100%;max-width:312px;height:56px}
-.kp-val{flex:1;text-align:center;font:400 24px/28.8px var(--sans);color:var(--text-primary)}
-.kp-chips{justify-content:center;flex-wrap:wrap}
-.kp-chips .chip.on{background:var(--surface-inverse-L1);color:var(--text-inverse-primary);border-color:var(--surface-inverse-L1)}
+.kp-step-wrap{min-width:0} .kp-step-wrap>span{min-width:0}
+.kp-step{flex:none;width:168px;height:48px}
+.kp-val{flex:1;min-width:0;text-align:center;font:400 18px/21.6px var(--sans);color:var(--text-primary);white-space:nowrap}
 .kp-kv{display:flex;flex-direction:column;gap:var(--sp-8);background:var(--surface-L2);border-radius:var(--r-12);padding:var(--sp-12) var(--sp-16)}
 .kp-kv>div{display:flex;justify-content:space-between;gap:var(--sp-8)}
 .kp-kv>div.em{font-weight:500}
-.kp-note{color:var(--text-secondary);text-align:center;padding:0 var(--sp-8)}
-.kp-note.neg{color:var(--text-negative)}
+/* info strip: full-width grey band above the keypad, like the live order form's "Market is closed…" line */
+.kp-strip{padding:var(--sp-12) var(--sp-16);background:var(--surface-L2);color:var(--text-secondary)}
+.kp-strip[hidden]{display:none}
+.kp-strip.neg{color:var(--text-negative)}
 .kp-pad{display:grid;grid-template-columns:repeat(3,1fr);padding:0 var(--sp-16)}
 .kp-pad button{height:52px;display:grid;place-items:center;color:var(--text-primary);border-radius:var(--r-12)}
 .kp-pad button{font-weight:400}
@@ -84,3 +83,18 @@ body:not(.fb2) .fb-on, body.fb2 .fb-off{display:none!important}
 /* Keypad header: the product up front (user, 11 Nov): "Intraday order" / "Delivery order" in h3 display. No badge or square-off line (removed on request). */
 .kp-prod{display:flex;flex-direction:column;align-items:center;gap:var(--sp-8);text-align:center;padding-bottom:var(--sp-4)}
 .kp-prod[hidden]{display:none}
+.of-field .kp-step{width:auto;min-width:160px;max-width:65%} /* grows for big amounts (₹10,00,000) instead of spilling under −/+ */
+.kp-step .kp-val{flex:1 0 auto;padding:0 var(--sp-4)}
+
+
+/* Trade in row: compact Segment switcher (subtle) on the right, like the live "Order type" row */
+.kp-unit button{height:32px;padding:0 var(--sp-16);white-space:nowrap}
+/* ₹ Amount: DLS Number field — outlined, ₹ prefix, value right-aligned, no step buttons. Shown in its focused state
+   (brand border + brand-subtle ring) because the in-app keypad is typing into it, as on the live Trigger price box. */
+.kp-numf{flex:none;display:flex;align-items:center;gap:var(--sp-4);min-width:160px;max-width:65%;height:48px;padding:0 var(--sp-16);
+  border-radius:var(--r-12);background:var(--surface-L1);border:var(--bw-emph) solid var(--surface-brand-L1);box-shadow:0 0 0 var(--sp-4) var(--surface-brand-subtle)}
+.kp-numf-pre{color:var(--text-secondary);font:400 18px/21.6px var(--sans)}
+.kp-numf-val{flex:1 0 auto;text-align:right;font:400 18px/21.6px var(--sans);color:var(--text-primary);white-space:nowrap}
+.kp-caret{width:1.5px;height:22px;background:var(--text-primary);flex:none;animation:kpCaret 1s steps(1) infinite}
+@keyframes kpCaret{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.kp-caret{animation:none}}

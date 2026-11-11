@@ -462,7 +462,7 @@ $("#sellBtn").onclick=()=>sent("Sell",barProd().prod,st.qty,st.mode==="lmt"?"Lmt
 function sent(side,p,q,t){toast(`${side} ${q} · ${p.label} · ${t}. Prototype: no order is sent.`)}
 $("#btnForm").onclick=()=>openForm();
 ["#btnDepth","#chipFunds"].forEach(s=>$(s).onclick=()=>toast("Not captured from the app in this prototype."));
-Object.assign(fbHook,initFb2({$,$$,S,st,fmt,chgTxt,showSheet,hideSheet,toast,bindSeg,placeThumb,price:()=>st.limit??S[st.sym][1],levOf:()=>barProd().prod?.lev??1, product:()=>barProd().prod, mountProducts:(seg,note)=>renderProducts(seg,note,st.sym,st.prod,v=>{st.prod=v;updateOrder()}),setQty:v=>setQ(v),enterScalper:k=>enterScalper(k)}));
+Object.assign(fbHook,initFb2({$,$$,S,st,fmt,chgTxt,showSheet,hideSheet,toast,bindSeg,placeThumb,price:()=>st.limit??S[st.sym][1],levOf:()=>barProd().prod?.lev??1, product:()=>barProd().prod, barNotice:()=>barProd().notice, mountProducts:(seg,note)=>renderProducts(seg,note,st.sym,st.prod,v=>{st.prod=v;updateOrder()}),setQty:v=>setQ(v),enterScalper:k=>enterScalper(k)}));
 
 // top-bar sheets
 $$("[data-sheet]").forEach(b=>b.onclick=()=>showSheet(b.dataset.sheet));
