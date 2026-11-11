@@ -147,16 +147,16 @@ $("#fApply").onclick=()=>{if(fsMode==="sort"){st.sort=sortDraft}else{fApplied=JS
 function enterScalper(sym){
   $("#home").hidden=true; $("#scalper").hidden=false;
   if(!st.group.includes(sym)) st.group=st.src==="hold"?Object.keys(HOLD):[sym];
-  loadSymbol(sym); requestAnimationFrame(()=>{placeThumb($("#modeSeg"));sizeCanvas();renderPills(true);nudgeStrip()});
+  loadSymbol(sym); requestAnimationFrame(()=>{placeThumb($("#modeSeg"));sizeCanvas();renderPills(true);nudgeStrip();listTip.schedule()});
 }
 let scBack="#home";
 // Back goes to where the stock was picked; the scanners page keeps its scroll and brings the last-viewed stock into view.
-$("#btnClose").onclick=()=>{stopNudge(); $("#scalper").hidden=true; $(scBack).hidden=false;
+$("#btnClose").onclick=()=>{stopNudge(); listTip.hide(); $("#scalper").hidden=true; $(scBack).hidden=false;
   if(scBack==="#scanAll"){renderSC.popFrom(); renderSC.syncFromScalper(); const r=$(`#saBody [data-sym="${st.sym}"]`); r&&r.scrollIntoView({block:"nearest"})}
   scBack="#home"};
 // One "Stocks on the move" screen: the list icon on the chart opens the same full page as Trade → Stock Scalper (no separate bottom sheet).
 // The list icon on the chart opens the Stocks on the move bottom sheet (My Lists · scanners · Holdings) with the list / chart / table views.
-$("#btnList").onclick=()=>{renderSwitch();showSheet("switch")};
+$("#btnList").onclick=()=>{listTip.hide(); renderSwitch();showSheet("switch")};
 
 // ---------- stock strip: slide through the list without leaving the chart ----------
 // The strip snaps the centred chip. While a finger drags it, the chip under the centre lights up with a light haptic tick;
@@ -236,6 +236,37 @@ function nudgeStrip(delay=700){
   },delay);
 }
 function stopNudge(){clearTimeout(nudgeT); if(nudgeAnim){nudgeAnim.cancel(); nudgeAnim=null}}
+
+// ---------- first-time tooltip on the list icon ----------
+// DLS Tooltip (Direction=up, Caret=end): inverse bubble with a 16×8 caret, title (s-bold) over description (xs-regular), close glyph.
+// Used as the DLS "manual" coach mark: it appears after the strip nudge has played and stays until it's dismissed
+// (close glyph, or opening the sheet it explains). Like the nudge there is no "seen" memory: it shows every time the chart opens,
+// from every entry point, so a PM reviewing this state never misses it.
+const listTip=(()=>{
+  $("#phone").insertAdjacentHTML("beforeend",`<div class="dtip" id="listTip" role="tooltip" hidden><div class="dtip-bubble"><div class="dtip-tx"><span class="dtip-title">Stocks on the move</span><span class="dtip-desc">Access your watchlist and stock scanners from one screen, without leaving the scalper.</span></div><button class="dtip-x i" id="listTipX" aria-label="Dismiss tip">&#xe103;</button></div><svg class="dtip-caret" width="16" height="8" viewBox="0 0 16 8" aria-hidden="true"><path d="M0 0h16l-6.6 6.6a2 2 0 0 1-2.8 0L0 0z" fill="currentColor"/></svg></div>`);
+  const el=$("#listTip"); let t=0;
+  function place(){ // above the icon, caret pointing at its centre, kept 16px inside the phone
+    const p=$("#phone").getBoundingClientRect(), b=$("#btnList").getBoundingClientRect(), w=Math.min(320,p.width-32); // wide enough for the copy to sit on two lines
+    el.style.width=w+"px";
+    const cx=b.left+b.width/2-p.left, left=Math.max(16,Math.min(p.width-16-w,cx+24-w));
+    el.style.left=left+"px"; el.style.top=(b.top-p.top-el.offsetHeight-4)+"px";
+    el.style.setProperty("--caret-x",Math.max(16,Math.min(w-32,cx-left-8))+"px");
+    el.style.transformOrigin=`${cx-left}px 100%`; // grows out of the caret
+  }
+  function show(){ el.hidden=false; place(); void el.offsetWidth; el.classList.add("show") }
+  function hide(){ clearTimeout(t); el.classList.remove("show"); setTimeout(()=>{ if(!el.classList.contains("show")) el.hidden=true },reduceMotion()?0:180) }
+  function schedule(delay=2600){ // after the nudge (700ms wait + 1.5s) plus a beat
+    clearTimeout(t);
+    t=setTimeout(function tick(){
+      if($("#scalper").hidden) return;
+      if(open.length||!$("#tourTip").hidden){ t=setTimeout(tick,400); return } // wait for a sheet / the tour to close
+      show();
+    },delay);
+  }
+  $("#listTipX").onclick=hide;
+  addEventListener("resize",()=>{ if(el.classList.contains("show")) place() });
+  return {schedule,hide};
+})();
 // deterministic sample candles ending at the captured LTP
 function rng(seed){let s=0;for(const c of seed)s=(s*31+c.charCodeAt(0))>>>0;return()=>((s=(s*1664525+1013904223)>>>0)/4294967296)}
 let candles=[];
@@ -364,11 +395,14 @@ function renderOD(){[1,2,3,4].forEach(i=>{const seg=$("#odSeg"+i); seg.querySele
 // Order size tab: says what each choice means, with a live example on the stock that's open
 function renderODSize(){
   const amt=odDraft[3]==="amt", k=st.sym, p=S[k][1], L=barProd().prod?.lev??1, inr=n=>"₹"+Math.round(n).toLocaleString("en-IN");
-  $("#odIn").textContent=amt?"Trade value in ₹":"Number of shares";
-  $("#odOut").textContent=amt?"Shares and margin":"Trade value and margin";
-  if(amt){const a=10000, q=Math.floor(a/p); $("#odEx").textContent=q<1?`${inr(a)} → below 1 share of ${k}`:`${inr(a)} → ${q} shares · Margin ${inr(q*p/L)}`}
-  else{const q=5; $("#odEx").textContent=`${q} shares → ${inr(q*p)} · Margin ${inr(q*p/L)}`}
-  $("#odNote").textContent=amt?"Shares are rounded down to a whole number. If the amount is less than one share, Buy and Sell stay off and the bar shows the minimum. Margin is trade value ÷ leverage (full value for Delivery).":"Margin is trade value ÷ leverage (full value for Delivery). In the order form you can switch to the other one for a single order.";
+  $("#odSizeTitle").textContent=amt?"Trade in ₹ amount":"Trade in quantity";
+  $("#odSizeDesc").textContent=amt?"Type how much to trade. We buy the whole shares it covers.":"Type the number of shares. We work out the trade value and margin.";
+  const a=10000, q=amt?Math.floor(a/p):5;
+  $("#odExIn").textContent=amt?inr(a):`${q} shares`;
+  $("#odExK1").textContent=amt?"Shares":"Trade value";
+  $("#odExV1").textContent=amt?(q<1?"Below 1":q):inr(q*p);
+  $("#odExV2").textContent=q<1?"—":inr(q*p/L);
+  $("#odExLev").textContent=L+"x"; $("#odExLev").hidden=L<=1;
 }
 function odTab(t){$$(".od-tabs .tab").forEach(b=>{const on=b.dataset.odt===t; b.classList.toggle("on",on); b.setAttribute("aria-selected",on)}); $("#odPane1").hidden=t!=="1"; $("#odPane2").hidden=t!=="2"; if(t==="2") placeThumb($("#odSeg4")); else [1,2,3].forEach(i=>placeThumb($("#odSeg"+i)))}
 $$(".od-tabs .tab").forEach(b=>b.onclick=()=>odTab(b.dataset.odt));

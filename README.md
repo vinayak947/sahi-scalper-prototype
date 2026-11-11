@@ -12,7 +12,7 @@ npm run dev        # http://localhost:8444  (set PORT=xxxx to change)
 Open it at phone width (browser device mode, 412 wide) or on a desktop, where it shows in a phone frame. The first screen is Home; tap **Trade**, then **Stock Scalper**. That opens the full **Stocks on the move** page (also what the Home widget's View all opens); the chart opens once you pick a stock. On the chart, slide the stock strip under it to move through the same list.
 **Watchlist** (bottom nav) is rebuilt from SAHI 968: My Lists (list tabs, ⋮ Edit / Rename / Delete, + Create, ⚙ Manage watchlist, list / chart / table views, Sort by, Search & Add, empty state), Stock Scanners (the app's 23 scanner tabs, ⓘ explainer, index picker) and Recently viewed. Tapping an NSE stock opens it in Stock Scalper with that list in the strip.
 Text sizes match the app, measured on the emulator: tabs, section titles and rows 16, sub text 14, nav labels 12.
-Shortcuts: `/#stocks` opens the scanners landing page, `/#scalper` opens the scalper directly, `/#scanner` opens the Stocks on the move sheet, `/#watchlist` opens Watchlist. Every time the chart opens on a list of 2+ stocks, the stock strip nudges sideways once to show it slides.
+Shortcuts: `/#stocks` opens the scanners landing page, `/#scalper` opens the scalper directly, `/#scanner` opens the Stocks on the move sheet, `/#watchlist` opens Watchlist. Every time the chart opens on a list of 2+ stocks, the stock strip nudges sideways once to show it slides. After the nudge, a DLS Tooltip on the list icon explains the Stocks on the move sheet; it shows on every open (no "seen" memory) until dismissed.
 
 ## Where things are
 

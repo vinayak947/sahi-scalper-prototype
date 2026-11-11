@@ -243,14 +243,15 @@
     <!-- Order size: how the 1-Tap bar takes the order size. Quantity is the SAHI app default; ₹ Amount enters the trade value. -->
     <div class="od-pane" id="odPane2" hidden>
       <div class="od-card">
-        <div class="tx od-tx"><span class="bm">Trade in</span><span class="bs sec">Choose what you type on the 1-Tap bar and the order form.</span></div>
+        <div class="tx od-tx"><span class="bm" id="odSizeTitle">Trade in quantity</span><span class="bs sec" id="odSizeDesc"></span></div>
         <div class="seg subtle bm od-full" id="odSeg4" role="radiogroup" aria-label="Trade in"><span class="thumb"></span><button class="on" data-v="qty">Quantity</button><button data-v="amt">&#8377; Amount</button></div>
-        <div class="od-div"></div>
-        <div class="od-kv bs"><span class="sec">You enter</span><span id="odIn"></span></div>
-        <div class="od-kv bs"><span class="sec">Worked out for you</span><span id="odOut"></span></div>
-        <div class="od-kv bs"><span class="sec">Example</span><span class="num" id="odEx"></span></div>
+        <!-- worked example on the open stock: what you type, then what SAHI works out -->
+        <div class="od-ex" aria-live="polite">
+          <div class="od-ex-in"><span class="bx sec">You type</span><span class="bm num" id="odExIn"></span></div>
+          <div class="od-ex-out"><span class="bx sec" id="odExK1"></span><span class="bm num" id="odExV1"></span></div>
+          <div class="od-ex-out"><span class="bx sec od-ex-k">Margin<span class="lev-badge bxb num" id="odExLev"></span></span><span class="bm num" id="odExV2"></span></div>
+        </div>
       </div>
-      <p class="bs sec od-note" id="odNote"></p>
     </div>
     <div style="padding:var(--sp-16)"><button class="btn primary press bm" style="width:100%" id="odApply" disabled>Apply</button></div>
   </div>
