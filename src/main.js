@@ -1,6 +1,6 @@
 import './tokens.css'
 import './scalper.css'
-import {initScanners} from './scanners.js'
+import {initScanners,INFO as SCAN_INFO} from './scanners.js'
 import {initFb2} from './fb2.js'
 import {initWatchlist} from './watchlist.js'
 import {initLive} from './live.js'
@@ -57,52 +57,133 @@ function bindSeg(seg,cb){seg.querySelectorAll("button").forEach(b=>b.addEventLis
 // ---------- home / trade ----------
 $("#navTrade").onclick=()=>showSheet("trade");
 // Founder feedback (5 Nov): Stock Scalper opens on a full page of intraday scanners; the chart comes only after a stock is picked.
-$("#openStockScalper").onclick=()=>hideSheet("trade",()=>renderSC.openAll("scalper"));
+$("#openStockScalper").onclick=()=>hideSheet("trade",openSomPage);
 
-// ---------- Stocks on the move (was "Switch symbol") ----------
+// ---------- Stocks on the move: ONE component (#som) ----------
+// The same block of UI, state and render code is used everywhere. Only its host changes:
+//   · bottom sheet (#somSheet) — the list icon on the chart
+//   · full page   (#somPage)  — Trade → Stocks Scalper, Home → View all
+// Any change to Stocks on the move is made here once and shows up in both.
 const tabsEl=$("#swTabs"), listEl=$("#swList");
+let somHost="sheet", somFrom="home";
+function openSom(host){ sw.view=SOM_DEFAULT_VIEW; listEl.scrollTop=0; mountSom(host) } // every fresh open → chart view
+function mountSom(host){ const h=$(host==="page"?"#somPage":"#somSheet"), el=$("#som"); if(el.parentElement!==h) h.appendChild(el); somHost=host; if(host!=="page") somCoach.hide(); $("#pvbTip").hidden=true; renderSwitch() }
+// One title everywhere (sheet + page, every entry point): "Select stock to scalp", set in index.html.
+function openSomPage(){
+  const prev=$$(".screen").find(x=>!x.hidden&&x.id!=="scanAll"); somFrom=prev?prev.id:"home"; // Back returns to the screen that opened it
+  $$(".screen").forEach(s=>s.hidden=true); $("#scanAll").hidden=false; openSom("page"); requestAnimationFrame(()=>placeThumb($("#swView"))); somCoach.maybeShow();
+}
+$("#saBack").onclick=()=>{$("#pvbTip").hidden=true; somCoach.hide(); $("#scanAll").hidden=true; ($("#"+somFrom)||$("#home")).hidden=false};
+
+// ---------- coach mark on the stock cards (full page only) ----------
+// DLS Tooltip (Direction=down, Caret=start): same inverse bubble as the list-icon tip, caret on top pointing at the first stock.
+// The first card also gets a soft ring (custom: the DLS has no spotlight component). No "seen" memory: it shows every time
+// the page opens, from every entry point; tapping any stock or the close glyph hides it for that visit only.
+const somCoach=(()=>{
+  try{localStorage.removeItem("sahi-som-coach-seen")}catch{} // drop the old one-time flag
+  $("#som").insertAdjacentHTML("beforeend",`<div class="dtip down" id="somCoach" role="tooltip" hidden><svg class="dtip-caret" width="16" height="8" viewBox="0 0 16 8" aria-hidden="true"><path d="M0 0h16l-6.6 6.6a2 2 0 0 1-2.8 0L0 0z" fill="currentColor"/></svg><div class="dtip-bubble"><div class="dtip-tx"><span class="dtip-title">Tap any stock to start scalping</span><span class="dtip-desc">Its live chart opens for intraday orders, with one-tap buy and sell. Swipe the strip on top to jump to the next stock.</span></div><button class="dtip-x i" id="somCoachX" aria-label="Dismiss tip">&#xe103;</button></div></div>`);
+  const el=$("#somCoach"); let t=0, on=false;
+  const target=()=>listEl.querySelector("[data-sym]");
+  function place(){
+    const tg=target(); if(!tg){ hide(); return }
+    $$("#swList .coach").forEach(x=>x!==tg&&x.classList.remove("coach")); tg.classList.add("coach");
+    const s=$("#som").getBoundingClientRect(), r=tg.getBoundingClientRect(), l=listEl.getBoundingClientRect(), w=Math.min(320,s.width-32);
+    el.style.width=w+"px"; el.style.left="16px"; el.style.top=(r.bottom-s.top+4)+"px";
+    const cx=Math.min(r.left+Math.min(r.width/2,72),r.right-24)-s.left; // caret under the stock name
+    el.style.setProperty("--caret-x",Math.max(16,Math.min(w-32,cx-16-8))+"px"); el.style.transformOrigin=`${cx-16}px 0`;
+    el.classList.toggle("off",r.bottom<l.top||r.bottom+el.offsetHeight>l.bottom); // scrolled away: fade out, come back on scroll up
+  }
+  function show(){ on=true; el.hidden=false; place(); void el.offsetWidth; el.classList.add("show"); requestAnimationFrame(place) }
+  function hide(){ clearTimeout(t); on=false; $$("#swList .coach").forEach(x=>x.classList.remove("coach")); el.classList.remove("show"); setTimeout(()=>{ if(!on) el.hidden=true },reduceMotion()?0:180) }
+  function maybeShow(){ // after the page has settled, only on the full page, every time
+    clearTimeout(t); if(somHost!=="page") return;
+    t=setTimeout(function tick(){ if($("#scanAll").hidden||somHost!=="page") return; if(open.length){ t=setTimeout(tick,400); return } show() },600);
+  }
+  $("#somCoachX").onclick=hide;
+  listEl.addEventListener("click",e=>{ if(on&&e.target.closest("[data-sym]")&&!e.target.closest("[data-wl]")) hide() },true);
+  listEl.addEventListener("scroll",()=>{ if(on) place() },{passive:true});
+  addEventListener("resize",()=>{ if(on) place() });
+  return {maybeShow,hide,refresh(){ if(on) requestAnimationFrame(()=>somHost==="page"?place():hide()) }};
+})();
+function showScanInfo(){const tip=$("#pvbTip"); tip.querySelector(".tx").innerHTML=SCAN_INFO[st.scan][st.dir==="bull"?0:1]+`<br><br>Sorted by intraday change, biggest ${st.dir==="bull"?"gainers":"losers"} first.`; tip.style.top=(tabsEl.offsetTop+tabsEl.offsetHeight+4)+"px"; tip.hidden=false}
 function curItems(){
   if(st.src==="scan") return [...SCAN[st.scan][st.dir]];
   if(st.src==="hold") return Object.keys(HOLD);
   return [...LISTS[st.list].items];
 }
 function sorted(items){const a=[...items], by={ltpd:k=>-S[k][1],ltpa:k=>S[k][1],chd:k=>-S[k][2]/S[k][1],cha:k=>S[k][2]/S[k][1]}[st.sort]; return by?a.sort((x,y)=>by(x)-by(y)):a}
-const sw={view:"list"}; // list / chart / table: the same three views as the full Stocks on the move page
+// HARD RULE (do not change): Stocks on the move ALWAYS opens on the CHART view (middle button), from every entry point —
+// chart list icon (sheet), Trade → Stocks Scalper and Home → View all (full page), and the #scanner / #stocks deep links.
+// openSom() resets it on every open; the user can still switch views while it is open, and coming Back from a chart keeps their pick.
+const SOM_DEFAULT_VIEW="chart";
+const sw={view:SOM_DEFAULT_VIEW,type:"area",range:"1D"}; // type + range: chart-view settings (chart type ▾ | time range ▾), kept while you switch tabs/sources // list / chart / table
 function renderSwitch(){
   $$("#srcChips .schip").forEach(c=>{const on=c.dataset.src===st.src; c.classList.toggle("on",on); const ck=c.querySelector(".ck"); if(on&&!ck) c.insertAdjacentHTML("beforeend",'<i class="i ck" style="font-size:16px">&#xe029;</i>'); if(!on&&ck) ck.remove();});
   tabsEl.hidden=st.src==="hold"; $("#bbTog").hidden=$("#btnFilter").hidden=st.src!=="scan"; // view switcher stays for every source; Bullish/Bearish + filter are scanner-only
   $$("#swView button").forEach(b=>b.classList.toggle("on",b.dataset.v===sw.view)); placeThumb($("#swView"));
+  $("#chartSet").hidden=sw.view!=="chart"; $("#bbRow").classList.toggle("cv",sw.view==="chart"); syncChartSet();
   if(st.src==="scan"){
     tabsEl.innerHTML=Object.entries(SCAN).map(([k,v])=>`<button class="tab${k===st.scan?" on":""}" data-k="${k}">${v.name}${k===st.scan?'<i class="i info" data-info="'+k+'">&#xe065;</i>':""}</button>`).join("");
   } else if(st.src==="lists"){
     tabsEl.innerHTML=LISTS.map((l,i)=>`<button class="tab${i===st.list?" on":""}" data-l="${i}">${l.name}</button>`).join("")+'<span class="addtab" aria-label="New watchlist"><i class="i">&#xe0bc;</i></span>';
   }
   tabsEl.querySelectorAll(".tab").forEach(t=>t.onclick=e=>{
-    if(e.target.dataset.info){ if(e.target.dataset.info==="pvb") $("#pvbTip").hidden=false; return }
+    if(e.target.dataset.info){ showScanInfo(); return }
     if(t.dataset.k){st.scan=t.dataset.k} else st.list=+t.dataset.l; $("#pvbTip").hidden=true; renderSwitch(); t.scrollIntoView({inline:"nearest",block:"nearest"});
     const n=tabsEl.querySelector(".tab.on"); n&&n.scrollIntoView({inline:"center",block:"nearest",behavior:"smooth"});
   });
   $$("#bbTog button").forEach(b=>b.classList.toggle("on",b.dataset.d===st.dir));
   const items=sorted(curItems());
-  if(!items.length){listEl.innerHTML=`<div class="empty"><span class="bmb">Your watchlist is empty</span><span class="bs sec">Add Stocks, ETFs or F&amp;O you want to track.</span></div>`;return}
+  if(!items.length){listEl.innerHTML=`<div class="empty"><span class="bmb">Your watchlist is empty</span><span class="bs sec">Add Stocks, ETFs or F&amp;O you want to track.</span></div>`;somCoach.refresh(); return}
   const cls=k=>S[k][2]>=0?"pos":"neg";
   // One-tap watchlist bookmark, same as the full Stocks on the move page (adds to / removes from "Stock Scanners")
   const wl=k=>`<button class="wl press${inWatch(k)?" on":""}" data-wl="${k}" aria-pressed="${inWatch(k)}" aria-label="${inWatch(k)?"Remove from":"Add to"} watchlist"><i class="i" aria-hidden="true">${inWatch(k)?"&#xe144;":"&#xe012;"}</i></button>`;
-  listEl.innerHTML=sw.view==="chart"?items.map(k=>{const [n,l]=S[k]; return `<div class="sa-card press" role="button" tabindex="0" data-sym="${k}"><span class="hd"><span class="bm">${n}</span><span class="tags"><span class="bxx tf">5m</span>${wl(k)}</span></span><span class="bm num"><span data-px="${k}">${fmt(l)}</span> <span class="bs ${cls(k)}" data-ch="${k}">${chgTxt(k)}</span> <span class="bs sec">today</span></span>${renderSC.chart(k,340,170,1)}${renderSC.xAxis(["Nov","11:15","13:15","15:15"])}</div>`}).join("")
+  listEl.innerHTML=sw.view==="chart"?`<div class="scw-grid som-grid">${items.map((k,i,a)=>renderSC.gridCard(k,i,a,sw)).join("")}</div>` // every source: same 2×2 cards as Home
    :sw.view==="table"?`<div style="overflow-x:auto"><table class="sa-tbl bm"><tr class="bs"><th>Instrument</th><th>LTP</th><th>Change</th><th>Change %</th></tr>${items.map(k=>`<tr data-sym="${k}"><td>${k}</td><td class="num" data-px="${k}">${fmt(S[k][1])}</td><td class="num ${cls(k)}" data-ch="${k}" data-cf="abs">${sign(S[k][2])}</td><td class="num ${cls(k)}" data-ch="${k}" data-cf="pct">${S[k][2]<0?"-":"+"}${pct(k).toFixed(2)}%</td></tr>`).join("")}</table></div>`
    :items.map(k=>{const [n,l,c]=S[k], h=st.src==="hold"?HOLD[k]:null;
     return `<div class="row" role="button" tabindex="0" data-sym="${k}"><span class="l"><span class="bm">${n}${k==="ADANIENT"?'<i class="i" style="font-size:14px">&#xe000;</i>':""}</span><span class="bs ter">NSE${h?' <span style="color:var(--text-tertiary)">•</span> <span class="num">'+h.qty+'</span>':""}</span></span><span class="r"><span class="bmb num" data-px="${k}">${fmt(l)}</span><span class="bs num ${c>=0?"pos":"neg"}" data-ch="${k}">${sign(c)} (${pct(k).toFixed(2)}%)</span></span>${wl(k)}</div>`}).join("");
-  listEl.querySelectorAll("[data-sym]").forEach(r=>r.onclick=e=>{if(e.target.closest("[data-wl]")) return; st.group=items; hideSheet("switch",()=>enterScalper(r.dataset.sym))});
+  listEl.querySelectorAll("[data-sym]").forEach(r=>r.onclick=e=>{if(e.target.closest("[data-wl]")) return; st.group=items;
+    if(somHost==="sheet") hideSheet("switch",()=>enterScalper(r.dataset.sym)); else {scBack="#scanAll"; $("#scanAll").hidden=true; enterScalper(r.dataset.sym)}});
   listEl.querySelectorAll("[data-wl]").forEach(b=>b.onclick=e=>{e.stopPropagation(); const k=b.dataset.wl, on=toggleWatch(k);
     // update every bookmark for this stock in place (sheet and full page), so the list doesn't jump
     $$(`[data-wl="${k}"]`).forEach(x=>{x.classList.toggle("on",on); x.setAttribute("aria-pressed",on); x.setAttribute("aria-label",(on?"Remove from":"Add to")+" watchlist"); x.firstElementChild.innerHTML=on?"&#xe144;":"&#xe012;";
       if(!matchMedia("(prefers-reduced-motion:reduce)").matches) x.firstElementChild.animate([{transform:"scale(.8)"},{transform:"scale(1)"}],{duration:200,easing:"cubic-bezier(.23,1,.32,1)"})})});
+  somCoach.refresh();
   listEl.querySelectorAll(".row[data-sym]").forEach(r=>r.onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&e.target===r){e.preventDefault(); r.click()}});
 }
 $$("#srcChips .schip").forEach(c=>c.onclick=()=>{st.src=c.dataset.src; $("#pvbTip").hidden=true; renderSwitch()});
-$$("#bbTog button").forEach(b=>b.onclick=()=>{st.dir=b.dataset.d; renderSwitch()});
+$$("#bbTog button").forEach(b=>b.onclick=()=>{st.dir=b.dataset.d; $("#pvbTip").hidden=true; renderSwitch()});
 bindSeg($("#swView"),v=>{sw.view=v; renderSwitch()});
 $("#tipX").onclick=()=>$("#pvbTip").hidden=true;
+
+// ---------- chart view settings: chart type ▾ | time range ▾ (parity with prod, SAHI 968 Watchlist → chart view) ----------
+// Chart-type glyphs are custom 16px SVGs: DlsIcons has no line/step/area/candle/Heikin Ashi/hollow/Renko icons.
+const CT_IC={
+ line:'<path d="M2 11l3.5-4 3 2.5L14 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>',
+ step:'<path d="M2 12h3V8h3v2h3V5h3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>',
+ area:'<path d="M2 11l3.5-4 3 2.5L14 4v10H2z" fill="currentColor" opacity=".22"/><path d="M2 11l3.5-4 3 2.5L14 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>',
+ candle:'<path d="M5 2v12M11 4v10" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="5" width="4" height="6" rx=".6" fill="currentColor"/><rect x="9" y="6" width="4" height="5" rx=".6" fill="currentColor"/>',
+ heikin:'<path d="M3.5 2v9M8 5v9M12.5 3v8" stroke="currentColor" stroke-width="1.2"/><rect x="2" y="3" width="3" height="5" rx=".5" fill="currentColor"/><rect x="6.5" y="7" width="3" height="5" rx=".5" fill="currentColor"/><rect x="11" y="5" width="3" height="4" rx=".5" fill="var(--surface-L1)" stroke="currentColor" stroke-width="1.1"/>',
+ hollow:'<path d="M5 2v12M11 4v10" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="5" width="4" height="6" rx=".6" fill="var(--surface-L1)" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="6" width="4" height="5" rx=".6" fill="currentColor"/>',
+ renko:'<path d="M2 11h3v3H2zM5 8h3v3H5zM8 5h3v3H8zM11 2h3v3h-3z" fill="currentColor"/>'
+};
+const CTYPES=[["line","Line"],["step","Step Line"],["area","Area"],["candle","Candle"],["heikin","Heikin Ashi"],["hollow","Hollow Candle"],["renko","Renko"]];
+const RANGES=["1D","5D","1M","3M","1Y","5Y"];
+const ctSvg=(t,z=16)=>`<svg width="${z}" height="${z}" viewBox="0 0 16 16" aria-hidden="true">${CT_IC[t]}</svg>`;
+function syncChartSet(){
+  $("#ctIc").innerHTML=ctSvg(sw.type); $("#trTx").textContent=sw.range;
+  $("#ctBtn").setAttribute("aria-label","Chart type: "+CTYPES.find(c=>c[0]===sw.type)[1]); $("#trBtn").setAttribute("aria-label","Time range: "+sw.range);
+}
+function renderCtList(){
+  $("#ctList").innerHTML=CTYPES.map(([k,l])=>`<button class="opt ct-opt${k===sw.type?" on":""}" role="radio" aria-checked="${k===sw.type}" data-ct="${k}"><span class="ct-l">${ctSvg(k,24)}${l}</span><span class="radio"></span></button>`).join("");
+  $$("#ctList [data-ct]").forEach(b=>b.onclick=()=>{sw.type=b.dataset.ct; renderCtList(); hideSheet("ctype",()=>renderSwitch())});
+}
+function renderTrList(){
+  $("#trList").innerHTML=RANGES.map(r=>`<button class="schip tr-chip${r===sw.range?" on":""}" role="radio" aria-checked="${r===sw.range}" data-tr="${r}">${r}${r===sw.range?'<i class="i ck" aria-hidden="true">&#xe029;</i>':""}</button>`).join("");
+  $$("#trList [data-tr]").forEach(b=>b.onclick=()=>{sw.range=b.dataset.tr; renderTrList(); hideSheet("trange",()=>renderSwitch())});
+}
+$("#ctBtn").onclick=()=>{somCoach.hide(); renderCtList(); showSheet("ctype")};
+$("#trBtn").onclick=()=>{somCoach.hide(); renderTrList(); showSheet("trange")};
 
 // filter & sort
 const FILTER={
@@ -152,11 +233,10 @@ function enterScalper(sym){
 let scBack="#home";
 // Back goes to where the stock was picked; the scanners page keeps its scroll and brings the last-viewed stock into view.
 $("#btnClose").onclick=()=>{stopNudge(); listTip.hide(); $("#scalper").hidden=true; $(scBack).hidden=false;
-  if(scBack==="#scanAll"){renderSC.popFrom(); renderSC.syncFromScalper(); const r=$(`#saBody [data-sym="${st.sym}"]`); r&&r.scrollIntoView({block:"nearest"})}
+  if(scBack==="#scanAll"){mountSom("page"); const r=$(`#swList [data-sym="${st.sym}"]`); r&&r.scrollIntoView({block:"nearest"})}
   scBack="#home"};
-// One "Stocks on the move" screen: the list icon on the chart opens the same full page as Trade → Stock Scalper (no separate bottom sheet).
-// The list icon on the chart opens the Stocks on the move bottom sheet (My Lists · scanners · Holdings) with the list / chart / table views.
-$("#btnList").onclick=()=>{listTip.hide(); renderSwitch();showSheet("switch")};
+// The list icon on the chart opens the same Stocks on the move component in the bottom sheet.
+$("#btnList").onclick=()=>{listTip.hide(); openSom("sheet"); showSheet("switch")};
 
 // ---------- stock strip: slide through the list without leaving the chart ----------
 // The strip snaps the centred chip. While a finger drags it, the chip under the centre lights up with a light haptic tick;
@@ -243,7 +323,7 @@ function stopNudge(){clearTimeout(nudgeT); if(nudgeAnim){nudgeAnim.cancel(); nud
 // (close glyph, or opening the sheet it explains). Like the nudge there is no "seen" memory: it shows every time the chart opens,
 // from every entry point, so a PM reviewing this state never misses it.
 const listTip=(()=>{
-  $("#phone").insertAdjacentHTML("beforeend",`<div class="dtip" id="listTip" role="tooltip" hidden><div class="dtip-bubble"><div class="dtip-tx"><span class="dtip-title">Stocks on the move</span><span class="dtip-desc">Access your watchlist and stock scanners from one screen, without leaving the scalper.</span></div><button class="dtip-x i" id="listTipX" aria-label="Dismiss tip">&#xe103;</button></div><svg class="dtip-caret" width="16" height="8" viewBox="0 0 16 8" aria-hidden="true"><path d="M0 0h16l-6.6 6.6a2 2 0 0 1-2.8 0L0 0z" fill="currentColor"/></svg></div>`);
+  $("#phone").insertAdjacentHTML("beforeend",`<div class="dtip" id="listTip" role="tooltip" hidden><div class="dtip-bubble"><div class="dtip-tx"><span class="dtip-title">Access all your stocks here</span><span class="dtip-desc">Your scanners, watchlists and holdings, all in one list.</span></div><button class="dtip-x i" id="listTipX" aria-label="Dismiss tip">&#xe103;</button></div><svg class="dtip-caret" width="16" height="8" viewBox="0 0 16 8" aria-hidden="true"><path d="M0 0h16l-6.6 6.6a2 2 0 0 1-2.8 0L0 0z" fill="currentColor"/></svg></div>`);
   const el=$("#listTip"); let t=0;
   function place(){ // above the icon, caret pointing at its centre, kept 16px inside the phone
     const p=$("#phone").getBoundingClientRect(), b=$("#btnList").getBoundingClientRect(), w=Math.min(320,p.width-32); // wide enough for the copy to sit on two lines
@@ -387,22 +467,24 @@ Object.assign(fbHook,initFb2({$,$$,S,st,fmt,chgTxt,showSheet,hideSheet,toast,bin
 // top-bar sheets
 $$("[data-sheet]").forEach(b=>b.onclick=()=>showSheet(b.dataset.sheet));
 bindSeg($("#pnlSeg"),v=>{$("#pnlEmpty").textContent=v==="total"?"You have not taken any positions or scalper trades today":"You have not taken any stock scalper trades today"; $("#pnlProtect").hidden=v!=="total"});
-$("#openDefaults").onclick=()=>hideSheet("more",()=>{odDraft=[...odSaved]; odTab("1"); renderOD(); showSheet("defaults")});
+$("#openDefaults").onclick=()=>hideSheet("more",()=>{odDraft=[...odSaved]; odDraft[3]=fbHook.input(); odSaved[3]=odDraft[3]; odTab("1"); $('.od-tabs [data-odt="2"]').hidden=$("#demoSwitch").value==="bar"; renderOD(); showSheet("defaults")});
 let odSaved=["m","m","mis","qty"], odDraft=["m","m","mis","qty"]; // [1-tap buy/sell, exit, product, order size]
 function renderOD(){[1,2,3,4].forEach(i=>{const seg=$("#odSeg"+i); seg.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.v===odDraft[i-1])); placeThumb(seg)});
   $("#odLimit").hidden=odDraft[0]!=="l"; $("#odDesc1").hidden=odDraft[0]==="l"; $("#odDesc2").hidden=odDraft[1]==="l";
   $("#odDesc3").textContent=odDraft[2]==="mis"?"Uses intraday leverage. Stocks without it go as Delivery; when intraday is shut, 1-Tap waits until it opens.":"Buys and sells as Delivery."; renderODSize(); $("#odApply").disabled=odDraft.join()===odSaved.join()}
 // Order size tab: says what each choice means, with a live example on the stock that's open
 function renderODSize(){
-  const amt=odDraft[3]==="amt", k=st.sym, p=S[k][1], L=barProd().prod?.lev??1, inr=n=>"₹"+Math.round(n).toLocaleString("en-IN");
+  const amt=odDraft[3]==="amt", k=st.sym, p=S[k][1], L=fbHook.lev?fbHook.lev():(barProd().prod?.lev??1), inr=n=>"₹"+Math.round(n).toLocaleString("en-IN");
   $("#odSizeTitle").textContent=amt?"Trade in ₹ amount":"Trade in quantity";
-  $("#odSizeDesc").textContent=amt?"Type how much to trade. We buy the whole shares it covers.":"Type the number of shares. We work out the trade value and margin.";
-  const a=10000, q=amt?Math.floor(a/p):5;
+  // ₹ Amount = the money you put in (margin); leverage turns it into the trade value
+  $("#odSizeDesc").textContent=amt?`Type the money you want to put in. At ${L}x, ₹1,000 trades ₹${(1000*L).toLocaleString("en-IN")} of shares; we buy the whole shares it covers.`:"Type the number of shares. We work out the trade value and margin.";
+  const a=1000, q=amt?Math.floor(a*L/p):5;
   $("#odExIn").textContent=amt?inr(a):`${q} shares`;
-  $("#odExK1").textContent=amt?"Shares":"Trade value";
-  $("#odExV1").textContent=amt?(q<1?"Below 1":q):inr(q*p);
-  $("#odExV2").textContent=q<1?"—":inr(q*p/L);
-  $("#odExLev").textContent=L+"x"; $("#odExLev").hidden=L<=1;
+  $("#odExK1").textContent=amt?`Trade value · ${L}x`:"Trade value";
+  $("#odExV1").textContent=amt?inr(a*L):inr(q*p);
+  $("#odExK2").textContent=amt?"Shares":"Margin";
+  $("#odExV2").textContent=amt?(q<1?"Below 1":q):inr(q*p/L);
+  $("#odExLev").textContent=L+"x"; $("#odExLev").hidden=amt||L<=1;
 }
 function odTab(t){$$(".od-tabs .tab").forEach(b=>{const on=b.dataset.odt===t; b.classList.toggle("on",on); b.setAttribute("aria-selected",on)}); $("#odPane1").hidden=t!=="1"; $("#odPane2").hidden=t!=="2"; if(t==="2") placeThumb($("#odSeg4")); else [1,2,3].forEach(i=>placeThumb($("#odSeg"+i)))}
 $$(".od-tabs .tab").forEach(b=>b.onclick=()=>odTab(b.dataset.odt));
@@ -480,7 +562,7 @@ function toggleWatch(k){const on=!inWatch(k); if(on) WL.items.push(k); else WL.i
 // guided tour (5 steps, copy from the app)
 const TOUR=[
  ["#chartCard","Stock Chart","Track the chart of any stock that you want to trade intraday (MIS) with leverage.","below"],
- ["#btnList","Stocks on the move","Pick the list of stocks to move through: a Stocks on the move scanner, a watchlist or your holdings.","above"],
+ ["#btnList","Access all your stocks here","Your scanners, watchlists and holdings, all in one list.","above"],
  ["#navPanel","Slide between stocks","Slide left or right to move through your list. The chart loads the stock you stop on.","above"],
  ["#chartTools","Customize your Charts","Select time interval, add indicators or customize chart type here.","below"],
  ["#orderPanel","1-Tap or Trade from Charts","1-Tap to send a market or limit order based on your defaults or drag price line on the chart to set limit or trigger price.","above"]
@@ -504,7 +586,7 @@ $("#ttClose").onclick=endTour;
 const defF=()=>{const t=fState;resetF();const r=serF();fState=t;return JSON.stringify(r)};
 const renderSC=initScanners({$,$$,S,SCAN,st,fmt,sign,pct,chgTxt,sorted,bindSeg,placeThumb,enterScalper,
   openFilter:()=>{sortDraft=st.sort;renderFilter();showSheet("filter")}, filterDirty:()=>st.sort!=="popular"||fApplied!==defF(),
-  appliedFilter:()=>JSON.parse(fApplied), inWatch, toggleWatch, setBack:s=>{scBack=s;$(s).hidden=true}});
+  appliedFilter:()=>JSON.parse(fApplied), inWatch, toggleWatch, setBack:s=>{scBack=s;$(s).hidden=true}, openPage:()=>openSomPage()});
 
 // Watchlist page (Home → Watchlist in the bottom nav)
 const WLP=initWatchlist({$,$$,S,LISTS,fmt,sign,showSheet,hideSheet,toast,bindSeg,placeThumb,enterScalper,st,
@@ -525,8 +607,10 @@ initLive({$$,books:[S,IDX],fmt,onTick(moved){
 
 // boot: open on Home; #scalper / #scanner jump straight in
 function boot(){const h=location.hash.slice(1);
-  if(h.startsWith("scalper")){st.group=[...SCAN[st.scan][st.dir]]; enterScalper(st.group[0])} else if(h.startsWith("scanner")){renderSwitch(); showSheet("switch")} else if(h.startsWith("stocks")) renderSC.openAll("scalper"); else if(h.startsWith("watchlist")) WLP.open()}
+  if(h.startsWith("scalper")){st.group=[...SCAN[st.scan][st.dir]]; enterScalper(st.group[0])} else if(h.startsWith("scanner")){openSom("sheet"); showSheet("switch")} else if(h.startsWith("stocks")) openSomPage(); else if(h.startsWith("watchlist")) WLP.open()}
 $("#demoTime").onchange=e=>setDemo(e.target.value);
+$("#demoSwitch").onchange=e=>fbHook.setSwitchAt(e.target.value);
+$("#demoPos").onchange=e=>fbHook.setPos(+e.target.value);
 setDemo($("#demoTime").value);
 document.fonts.ready.then(()=>{$$(".seg").forEach(placeThumb); draw()});
 boot();

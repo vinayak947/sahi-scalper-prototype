@@ -2,14 +2,15 @@
 body:not(.fb2) .fb-on, body.fb2 .fb-off{display:none!important}
 
 /* 1-Tap panel: wider middle column for a rupee value */
-.fb-row{grid-template-columns:1fr 1.35fr 1fr;align-items:center}
+.fb-row{grid-template-columns:1fr 1.35fr 1fr;align-items:start}
+.fb-row .bs-btn{width:100%}
+.fb-row .fb-step{width:100%}
+.fb-m{color:var(--text-secondary);white-space:nowrap}
 .bs-btn:disabled{opacity:.4;cursor:default}
 .fb-step{padding:0 var(--sp-4)}
 .fb-step button{width:28px;height:28px;flex:none}
-.fb-in{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:text}
-.fb-in input{width:100%;border:0;background:none;text-align:center;color:var(--text-primary);padding:0;outline:none}
 .fb-sum{display:flex;align-items:center;gap:var(--sp-8);padding:var(--sp-8) var(--sp-4) 0}
-.fb-sumtx{flex:1;min-width:0;text-align:center;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fb-sumtx{flex:0 1 auto;min-width:0;text-align:center;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fb-sumtx.neg{color:var(--text-negative)}
 /* Leverage badge (approximation of DLS Leverage badge) */
 .lev-badge{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:var(--r-4);background:var(--surface-brand-subtle);color:var(--icon-brand);flex:none;vertical-align:middle}
@@ -46,19 +47,37 @@ body:not(.fb2) .fb-on, body.fb2 .fb-off{display:none!important}
 .fbf-foot{display:flex;flex-direction:column;align-items:center;gap:var(--sp-8);padding:var(--sp-12) var(--sp-16) var(--sp-16);border-top:var(--bw-hair) solid var(--border-L1)}
 .fbf-foot .bs-btn{flex-direction:row}
 
-/* Enter trade value sheet (₹ Amount mode): a big amount field like a payment screen, quick-add chips, Done */
-.amt-head{display:flex;align-items:center;justify-content:space-between;padding:var(--sp-16) var(--sp-16) 0}
-.amt-body{display:flex;flex-direction:column;align-items:center;gap:var(--sp-12);padding:var(--sp-24) var(--sp-16) var(--sp-16)}
-.amt-field{display:flex;align-items:baseline;justify-content:center;gap:var(--sp-4);max-width:100%;font:500 40px/48px var(--sans);color:var(--text-primary)}
-.amt-in{font:inherit;color:inherit;border:0;background:none;padding:0;outline:none;min-width:1ch;max-width:75vw}
-.amt-in::placeholder{color:var(--text-tertiary)}
-.amt-sum{color:var(--text-secondary);text-align:center}
-.amt-sum.neg{color:var(--text-negative)}
-.amt-chips{flex-wrap:wrap;justify-content:center;margin-top:var(--sp-4)}
-.amt-foot{display:flex;flex-direction:column;gap:var(--sp-12);padding:var(--sp-12) var(--sp-16) var(--sp-16)}
-.amt-done{width:100%}
+/* Order size keypad sheet (tap the size on the bar): Qty / ₹ switch (prototype setting), stepper, breakdown, keypad, Apply */
+.kp-top{display:flex;flex-direction:column;gap:var(--sp-12);padding:var(--sp-24) var(--sp-16) var(--sp-8)}
+.kp-unit{display:flex}.kp-unit button{flex:1}
+.kp-unit[hidden],.kp-line[hidden],.kp-chips[hidden]{display:none}
+.kp-line{display:flex;align-items:center;justify-content:space-between}
+.kp-line .seg button{height:28px;padding:0 var(--sp-16)}
+.kp-step-wrap{display:flex;flex-direction:column;align-items:center;gap:var(--sp-8)}
+.kp-step{width:100%;max-width:312px;height:56px}
+.kp-val{flex:1;text-align:center;font:400 24px/28.8px var(--sans);color:var(--text-primary)}
+.kp-chips{justify-content:center;flex-wrap:wrap}
+.kp-chips .chip.on{background:var(--surface-inverse-L1);color:var(--text-inverse-primary);border-color:var(--surface-inverse-L1)}
+.kp-kv{display:flex;flex-direction:column;gap:var(--sp-8);background:var(--surface-L2);border-radius:var(--r-12);padding:var(--sp-12) var(--sp-16)}
+.kp-kv>div{display:flex;justify-content:space-between;gap:var(--sp-8)}
+.kp-kv>div.em{font-weight:500}
+.kp-note{color:var(--text-secondary);text-align:center;padding:0 var(--sp-8)}
+.kp-note.neg{color:var(--text-negative)}
+.kp-pad{display:grid;grid-template-columns:repeat(3,1fr);padding:0 var(--sp-16)}
+.kp-pad button{height:52px;display:grid;place-items:center;color:var(--text-primary);border-radius:var(--r-12)}
+.kp-pad button{font-weight:400}
+.kp-pad button.i{font-size:24px}
+.kp-pad button:active{background:var(--surface-L2)}
+.kp-foot{padding:var(--sp-8) var(--sp-16) var(--sp-16)}
+.kp-foot .btn{width:100%}
 
-/* ₹ Amount mode: the bar shows only the tappable value (it opens the Enter trade value sheet), so no − / + */
-.fb-step.amt>button{display:none}
-.fb-step.amt .fb-in{flex:1;cursor:pointer}
-.fb-step.amt .fb-in input{cursor:pointer}
+/* bar: size is a button that opens the keypad sheet; summary line (margin) is tappable too */
+.fb-in{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;color:var(--text-primary)}
+.fb-step .fb-in{display:flex;flex:1;width:auto;height:44px;border-radius:var(--r-full);justify-content:center}
+.fb-sum{display:flex;align-items:center;gap:var(--sp-4);max-width:100%;justify-content:center;padding:0}
+.fb-sum .lev-badge[hidden]{display:none}
+
+/* ₹ Amount mode: the bar shows only the tappable amount (it opens the keypad sheet), so no − / + */
+.fb-step.amt>#fbMinus,.fb-step.amt>#fbPlus{display:none}
+.od-tabs .tab[hidden]{display:none}
+

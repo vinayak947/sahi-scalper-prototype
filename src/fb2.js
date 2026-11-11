@@ -1,130 +1,185 @@
 // Stock Scalper order bar + order form (was "Feedback v2", now always on).
-//  1. Show the total trade amount (not only margin).
-//  2. 1-Tap order size is set in Order Defaults → Order size: Quantity (default, as in the SAHI app) or ₹ Amount.
-//     Qty: you enter shares, the bar shows trade value and margin. ₹: you enter the trade value, the bar shows shares and margin.
-//  3. Redesigned order form (Dale's sample is the reference; it was not found, so this is a placeholder layout).
-//  4. Non-trade features removed from the scalper More sheet (Guided tour).
+//  1. Order size is Quantity (SAHI app default) or ₹ Amount.
+//     PM feedback (11 Nov): people think in the money they put in (₹500, ₹5,000), not in trade value. So ₹ Amount is the
+//     MARGIN: trade value = amount × leverage, shares = whole shares that trade value buys. Margin actually used and trade
+//     value are shown as outputs under Buy/Sell only.
+//  2. Fractional shares: shares are recomputed from the amount at the live price, so the amount is a cap that is never
+//     exceeded; what a whole share can't use stays unused and is shown.
+//  3. Tapping the size on the bar opens a keypad sheet (as in the SAHI app). No leverage picker: as in prod (SAHI 968), leverage
+//     comes from the product. Intraday always uses the stock's own leverage (the 5X on the Intraday pill); Delivery is 1x.
+//     Prototype setting (tap the clock): the Qty / ₹ switch lives either in Order Defaults → Order size, or in the keypad sheet.
+//  4. Exit: with an open position, Sell exits it and frees margin instead of blocking new margin.
 import './fb2.css'
 
 const FUNDS = 25000 // sample available funds
-const STEP = 1000
+const AMT_STEP = 100
+const AMT_PICKS = [500, 1000, 5000, 10000] // round numbers people trade with
+const BACKSPACE = ''
 
 export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast, bindSeg, placeThumb, price, levOf, product, mountProducts, setQty, enterScalper }) {
   const fb = {
-    def: 'qty',                           // the Order Defaults choice: 'qty' | 'amt'
-    input: 'qty',                         // what the bar and form use right now (the form can switch it for one order)
-    amt: 10000,
+    def: 'qty',        // the saved choice: 'qty' | 'amt'
+    input: 'qty',      // what the bar and form use right now (the form can switch it for one order)
+    amt: 1000,         // ₹ the user puts in (margin)
+    lev: null,         // picked intraday leverage; null = the stock's highest
+    switchAt: 'bar', // prototype setting (default: on the order bar): where Qty / ₹ is switched ('defaults' | 'bar')
+    pos: 0,            // prototype setting: shares already bought in this stock (for the exit case)
   }
   const inr = (n, dp) => '₹' + (dp ?? (n < 100 ? 2 : 0) ? n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Math.round(n).toLocaleString('en-IN'))
+  // short form for the order bar: ₹806, ₹4.8k, ₹24.2k, ₹2.5L, ₹1.2Cr (1 decimal, truncated, trailing .0 dropped)
+  const inrK = n => { const u = n >= 1e7 ? [1e7, 'Cr'] : n >= 1e5 ? [1e5, 'L'] : n >= 1e3 ? [1e3, 'k'] : null
+    return u ? '₹' + (Math.floor(n / u[0] * 10) / 10).toString() + u[1] : inr(n) }
+  const sh = n => `${n.toLocaleString('en-IN')} share${n === 1 ? '' : 's'}`
 
-  // qty / value / margin for a price and the current input
-  function calc(p) {
-    const L = levOf(st.sym)
-    if (fb.input === 'qty') { const q = st.qty; return { q, value: q * p, margin: q * p / L, L } }
-    // ₹ amount = trade value (agreed with Manish); margin = value ÷ leverage
-    const q = Math.floor(fb.amt / p + 1e-9)
-    return { q, value: q * p, margin: q * p / L, L, min: p }
+  // leverage is never picked (prod parity): it's the product's leverage for the open stock
+  const maxLev = () => levOf(st.sym)
+  const levFor = () => maxLev()
+
+  // qty / trade value / margin for a price, input, size and leverage
+  function calcWith(p, input, size, L) {
+    if (input === 'qty') { const q = size; return { q, value: q * p, margin: q * p / L, L } }
+    const q = Math.floor(size * L / p + 1e-9), margin = q * p / L
+    return { q, value: q * p, margin, L, budget: size, left: size - margin, min: p / L }
   }
+  const calc = p => calcWith(p, fb.input, fb.input === 'amt' ? fb.amt : st.qty, levFor(fb.lev))
 
   // ---------- 1-Tap order panel ----------
   const row2 = $('#orderPanel .op-row2'); row2.classList.add('fb-off')
   row2.insertAdjacentHTML('afterend', `
   <div class="fb-on fb-panel">
     <div class="op-row2 fb-row">
-      <button class="bs-btn buy press" id="fbBuy"><span class="bs">Buy at</span><span class="bmb" id="fbBuyLbl">Mkt</span></button>
-      <div class="stepper fb-step">
-        <button id="fbMinus" aria-label="Decrease"><i class="i">&#xe09a;</i></button>
-        <label class="fb-in"><span class="bxx sec" id="fbInLbl">Amount</span><input id="fbIn" class="bmb num" inputmode="numeric" aria-label="Amount in rupees"></label>
-        <button id="fbPlus" aria-label="Increase"><i class="i">&#xe0bc;</i></button>
+      <div class="col"><button class="bs-btn buy press" id="fbBuy"><span class="bs" id="fbBuyTop">Buy at</span><span class="bmb" id="fbBuyLbl">Mkt</span></button><span class="bx num fb-m" id="fbMBuy"></span></div>
+      <div class="col">
+        <div class="stepper fb-step">
+          <button id="fbMinus" aria-label="Decrease"><i class="i">&#xe09a;</i></button>
+          <button class="fb-in" id="fbInBtn"><span class="bxx sec" id="fbInLbl">Quantity</span><span id="fbIn" class="bmb num"></span></button>
+          <button id="fbPlus" aria-label="Increase"><i class="i">&#xe0bc;</i></button>
+        </div>
+        <button class="fb-sum press" id="fbSumBtn" aria-label="Change order size"><span class="bx fb-sumtx num" id="fbSum" aria-live="polite"></span></button>
       </div>
-      <button class="bs-btn sell press" id="fbSell"><span class="bs">Sell at</span><span class="bmb" id="fbSellLbl">Mkt</span></button>
-    </div>
-    <div class="fb-sum">
-      <span class="bx fb-sumtx num" id="fbSum" aria-live="polite"></span>
+      <div class="col"><button class="bs-btn sell press" id="fbSell"><span class="bs" id="fbSellTop">Sell at</span><span class="bmb" id="fbSellLbl">Mkt</span></button><span class="bx num fb-m" id="fbMSell"></span></div>
     </div>
   </div>`)
 
-  const inEl = $('#fbIn')
   function renderPanel() {
-    const p = price(), c = calc(p)
+    const p = price(), c = calc(p), amt = fb.input === 'amt'
     $('#fbBuyLbl').textContent = $('#buyLbl').textContent; $('#fbSellLbl').textContent = $('#sellLbl').textContent
-    $('#fbInLbl').textContent = fb.input === 'amt' ? 'Trade value' : 'Quantity'
-    if (document.activeElement !== inEl) inEl.value = fb.input === 'amt' ? inr(fb.amt) : st.qty.toLocaleString('en-IN')
-    inEl.setAttribute('aria-label', fb.input === 'amt' ? 'Amount in rupees' : 'Quantity')
-    inEl.readOnly = fb.input === 'amt' // typed in the "Enter trade value" sheet, not in the narrow bar
-    $('.fb-step').classList.toggle('amt', fb.input === 'amt') // amount mode: just the value, no − / + steppers
-    inEl.style.fontSize = inEl.value.length > 9 ? '12px' : '' // crore-sized amounts still fit the bar
-    const s = $('#fbSum'), short = c.q < 1, levTx = c.L > 1 ? ` · ${c.L}x` : '' // leverage reads inline with the margin, no separate pill
+    $('#fbInLbl').textContent = amt ? 'Amount' : 'Quantity'
+    const v = $('#fbIn'); v.textContent = amt ? inr(fb.amt) : st.qty.toLocaleString('en-IN'); v.style.fontSize = v.textContent.length > 9 ? '12px' : ''
+    $('#fbInBtn').setAttribute('aria-label', amt ? `Amount ${inr(fb.amt)}, change` : `Quantity ${st.qty}, change`)
+    $('.fb-step').classList.toggle('amt', amt) // amount mode: just the value, no − / + steppers
+    const s = $('#fbSum'), short = c.q < 1, pos = fb.pos
+    // Under the size: what it buys. Margin sits under each button, because Buy and Sell need different margin.
     s.classList.toggle('neg', short)
-    if (short) s.textContent = `Min ${inr(c.min)} for 1 share`
-    else if (fb.input === 'qty') s.textContent = `Trade value ${inr(c.value)} · Margin ${inr(c.margin)}${levTx}`
-    else s.textContent = `${c.q.toLocaleString('en-IN')} share${c.q > 1 ? 's' : ''} · Margin ${inr(c.margin)}${levTx}`
-    // Founder feedback (product eligibility): no product picked (intraday shut / not offered) → no 1-tap order
-    $('#fbBuy').disabled = $('#fbSell').disabled = short || !product()
+    const levTx = c.L > 1 ? ` · ${c.L}x` : '' // leverage as plain text, as across the app (no pill)
+    s.textContent = short ? `Min ${inr(c.min)}` : amt ? `${sh(c.q)} · ${inrK(c.value)}${levTx}` : `Value ${inrK(c.value)}${levTx}` // amount mode: shares it buys + their trade value
+    $('#fbSumBtn').title = short ? `Min ${inr(c.min)} for 1 share at ${c.L}x` : `Trade value ${inr(c.value)}`
+    // With an open position (as in the SAHI app) Buy becomes Add and Sell becomes Exit.
+    // Add needs margin like a buy; Exit closes shares you already hold, so it needs none.
+    $('#fbBuyTop').textContent = pos ? 'Add at' : 'Buy at'
+    $('#fbSellTop').textContent = pos ? 'Exit at' : 'Sell at'
+    const mTx = short ? 'Margin: –' : `Margin: ${inrK(c.margin)}`
+    $('#fbMBuy').textContent = mTx
+    $('#fbMSell').textContent = pos ? 'Margin: ₹0' : mTx
+    $('#fbBuy').disabled = short || !product()
+    $('#fbSell').disabled = (short && !pos) || !product()
   }
   const setAmt = v => { fb.amt = Math.max(0, Math.min(1e7, Math.round(v) || 0)); renderPanel(); renderForm() }
-  const step = d => fb.input === 'amt' ? setAmt((Math.round(fb.amt / STEP) + d) * STEP) : (setQty(st.qty + d), renderForm())
+  const step = d => fb.input === 'amt' ? setAmt((Math.round(fb.amt / AMT_STEP) + d) * AMT_STEP) : (setQty(st.qty + d), renderForm())
   $('#fbMinus').onclick = () => step(-1); $('#fbPlus').onclick = () => step(1)
-  // ₹ Amount: the bar's field is too narrow for lakhs, so tapping it opens the "Enter trade value" sheet instead of typing in place
-  inEl.addEventListener('focus', () => {
-    if (fb.input === 'amt') { inEl.blur(); openAmt(); return }
-    inEl.value = st.qty; inEl.select()
-  })
-  inEl.addEventListener('click', () => { if (fb.input === 'amt' && $('#sh-amt').hidden) { inEl.blur(); openAmt() } })
-  inEl.addEventListener('input', () => { const n = +inEl.value.replace(/\D/g, ''); fb.input === 'amt' ? (fb.amt = n) : null; if (fb.input === 'amt') { renderPanel(); renderForm() } })
-  inEl.addEventListener('change', () => { const n = +inEl.value.replace(/\D/g, ''); fb.input === 'amt' ? setAmt(n) : (setQty(n), renderForm()) })
-  inEl.addEventListener('blur', renderPanel)
-  inEl.addEventListener('keydown', e => { if (e.key === 'Enter') inEl.blur() })
+  $('#fbInBtn').onclick = () => openKp(); $('#fbSumBtn').onclick = () => openKp()
+
   function switchInput(v) {
     // carry the size across so switching doesn't change the order
     const c = calc(price())
     if (v === 'qty' && fb.input === 'amt' && c.q >= 1) setQty(c.q)
-    if (v === 'amt' && fb.input === 'qty') fb.amt = Math.round(c.value)
+    if (v === 'amt' && fb.input === 'qty') fb.amt = Math.max(AMT_STEP, Math.round(c.margin / AMT_STEP) * AMT_STEP)
     fb.input = v
     $$('[data-fbunit]').forEach(b => b.textContent = v === 'amt' ? 'Enter quantity instead' : 'Enter amount instead')
     renderPanel(); renderForm()
   }
-  // ---------- Enter trade value sheet (₹ Amount mode) ----------
+
+  // ---------- Order size keypad sheet (opened from the bar) ----------
   $('#phone').insertAdjacentHTML('beforeend', `
-  <div class="sheet amt" id="sh-amt" hidden role="dialog" aria-label="Enter trade value">
-    <div class="amt-head"><span class="bl">Enter trade value</span><button class="i fbf-x press" id="amtX" aria-label="Close">&#xe103;</button></div>
-    <div class="amt-body">
-      <label class="amt-field"><span class="amt-cur num" aria-hidden="true">₹</span><input id="amtIn" class="amt-in num" inputmode="numeric" autocomplete="off" placeholder="0" aria-label="Trade value in rupees"></label>
-      <div class="bs amt-sum num" id="amtSum" aria-live="polite"></div>
-      <div class="fbf-chips amt-chips" id="amtChips">${[1000, 10000, 50000, 100000].map(v => `<button class="chip bs press" data-add="${v}">+${inr(v)}</button>`).join('')}</div>
+  <div class="sheet kp" id="sh-kp" hidden role="dialog" aria-label="Order size">
+    <div class="kp-top">
+      <div class="seg subtle bm kp-unit" id="kpUnit" role="radiogroup" aria-label="Trade in"><span class="thumb"></span><button data-v="qty">Quantity</button><button data-v="amt">&#8377; Amount</button></div>
+      <div class="kp-step-wrap">
+        <span class="bs sec" id="kpLbl"></span>
+        <div class="stepper kp-step"><button id="kpMinus" class="press" aria-label="Decrease"><i class="i">&#xe09a;</i></button><output class="num kp-val" id="kpVal" aria-live="polite"></output><button id="kpPlus" class="press" aria-label="Increase"><i class="i">&#xe0bc;</i></button></div>
+      </div>
+      <div class="fbf-chips kp-chips" id="kpChips"></div>
+      <div class="kp-kv bs" id="kpKv" aria-live="polite"></div>
+      <div class="bx kp-note" id="kpNote" hidden></div>
     </div>
-    <div class="amt-foot">
-      <div class="fbf-notice bs" id="amtNotice" hidden></div>
-      <button class="btn primary bmb press amt-done" id="amtDone">Done</button>
-    </div>
+    <div class="kp-pad" id="kpPad">${['1','2','3','4','5','6','7','8','9','00','0','del'].map(k => `<button class="press ${k === 'del' ? 'i' : 'h4'}" data-k="${k}"${k === 'del' ? ' aria-label="Delete"' : ''}>${k === 'del' ? BACKSPACE : k}</button>`).join('')}</div>
+    <div class="kp-foot"><button class="btn primary bm press" id="kpApply">Apply</button></div>
   </div>`)
-  const amtIn = $('#amtIn')
-  function renderAmt() {
-    const c = calc(price()), short = c.q < 1, over = c.margin > FUNDS, s = $('#amtSum')
-    s.classList.toggle('neg', short)
-    s.textContent = short ? `Min ${inr(c.min)} for 1 share` : `${c.q.toLocaleString('en-IN')} share${c.q > 1 ? 's' : ''} · Margin ${inr(c.margin)}${c.L > 1 ? ` · ${c.L}x` : ''}`
-    const nt = $('#amtNotice'); nt.hidden = short || !over; nt.textContent = `Margin is ${inr(c.margin - FUNDS)} more than your available funds.`
-    $('#amtDone').disabled = short
+  const kp = { input: 'qty', qty: 1, amt: 1000, lev: null, fresh: true }
+  const kpSize = () => kp.input === 'amt' ? kp.amt : kp.qty
+  function renderKp() {
+    const p = price(), L = levFor(kp.lev), amt = kp.input === 'amt', c = calcWith(p, kp.input, kpSize(), L), short = c.q < 1
+    // Qty / ₹ switch shows here only when the prototype setting puts it on the bar
+    const unit = $('#kpUnit'); unit.hidden = fb.switchAt !== 'bar'
+    unit.querySelectorAll('button').forEach(b => { const on = b.dataset.v === kp.input; b.classList.toggle('on', on); b.setAttribute('aria-checked', on) }); if (!unit.hidden) placeThumb(unit)
+    $('#kpLbl').textContent = amt ? 'Amount you put in' : 'Quantity'
+    $('#kpVal').textContent = amt ? inr(kp.amt) : kp.qty.toLocaleString('en-IN')
+    $('#kpChips').hidden = !amt
+    $('#kpChips').innerHTML = AMT_PICKS.map(v => `<button class="chip bs press num${kp.amt === v ? ' on' : ''}" data-set="${v}">${inr(v)}</button>`).join('')
+    // margin first: what you put in → × leverage → trade value → whole shares
+    const row = (k, v, cls = '') => `<div class="${cls}"><span class="sec">${k}</span><span class="num">${v}</span></div>`
+    $('#kpKv').innerHTML = amt
+      ? row('Margin you put in', inr(kp.amt)) + row(`Trade value at ${L}x`, inr(kp.amt * L)) + row('Shares at ' + inr(p, 2), short ? 'Below 1' : sh(c.q), 'em')
+      : row('Trade value', inr(c.value)) + row(`Margin at ${L}x`, inr(c.margin), 'em')
+    const n = $('#kpNote'), over = c.margin > FUNDS
+    n.classList.toggle('neg', short || over)
+    n.hidden = false
+    if (short) n.textContent = amt ? `Put in at least ${inr(c.min)} for 1 share at ${L}x.` : 'Enter at least 1 share.'
+    else if (over) n.textContent = `Margin is ${inr(c.margin - FUNDS)} more than your available funds (${inr(FUNDS)}).`
+    else if (amt && c.left >= 0.5) n.textContent = `Uses ${inr(c.margin)} of it. ${inr(c.left)} stays unused: not enough for 1 more share. Shares follow the live price and never go over ${inr(kp.amt)}.`
+    else n.hidden = true
+    $('#kpApply').disabled = short
   }
-  function showAmtValue() { amtIn.value = fb.amt ? fb.amt.toLocaleString('en-IN') : ''; amtIn.style.width = Math.max(1, amtIn.value.length) + 0.5 + 'ch' }
-  function openAmt() {
-    showAmtValue(); renderAmt(); showSheet('amt')
-    setTimeout(() => { amtIn.focus(); amtIn.setSelectionRange(amtIn.value.length, amtIn.value.length) }, 60)
+  function openKp() {
+    Object.assign(kp, { input: fb.input, qty: st.qty, amt: fb.amt, lev: levFor(fb.lev), fresh: true })
+    renderKp(); showSheet('kp')
   }
-  amtIn.addEventListener('input', () => {
-    fb.amt = Math.min(1e7, +amtIn.value.replace(/\D/g, '')); showAmtValue()
-    amtIn.setSelectionRange(amtIn.value.length, amtIn.value.length)
-    renderAmt(); renderPanel(); renderForm()
+  const kpSet = v => { if (kp.input === 'amt') kp.amt = Math.max(0, Math.min(1e7, v)); else kp.qty = Math.max(0, Math.min(99999, v)); renderKp() }
+  function key(k) {
+    const cur = kp.fresh ? '' : String(kpSize() || '')
+    kp.fresh = false
+    if (k === 'del') return kpSet(+cur.slice(0, -1) || 0)
+    kpSet(+(cur + k))
+  }
+  $('#kpPad').addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (b) key(b.dataset.k) })
+  $('#kpMinus').onclick = () => { kp.fresh = false; kp.input === 'amt' ? kpSet((Math.round(kp.amt / AMT_STEP) - 1) * AMT_STEP) : kpSet(kp.qty - 1) }
+  $('#kpPlus').onclick = () => { kp.fresh = false; kp.input === 'amt' ? kpSet((Math.round(kp.amt / AMT_STEP) + 1) * AMT_STEP) : kpSet(kp.qty + 1) }
+  $('#kpChips').addEventListener('click', e => { const b = e.target.closest('[data-set]'); if (b) { kp.fresh = true; kpSet(+b.dataset.set) } })
+  $('#kpUnit').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b || b.dataset.v === kp.input) return
+    const c = calcWith(price(), kp.input, kpSize(), levFor(kp.lev)) // carry the size across
+    if (b.dataset.v === 'qty') kp.qty = Math.max(1, c.q); else kp.amt = Math.max(AMT_STEP, Math.round(c.margin / AMT_STEP) * AMT_STEP)
+    kp.input = b.dataset.v; kp.fresh = true; renderKp()
   })
-  amtIn.addEventListener('keydown', e => { if (e.key === 'Enter' && !$('#amtDone').disabled) hideSheet('amt') })
-  $('#amtChips').addEventListener('click', e => {
-    const b = e.target.closest('[data-add]'); if (!b) return
-    fb.amt = Math.min(1e7, fb.amt + +b.dataset.add); showAmtValue(); renderAmt(); renderPanel(); renderForm()
+  $('#kpApply').onclick = () => {
+    if (fb.switchAt === 'bar' && kp.input !== fb.input) { fb.def = kp.input; switchInput(kp.input) }
+    if (kp.input === 'amt') setAmt(kp.amt); else { setQty(kp.qty); renderForm() }
+    renderPanel(); hideSheet('kp')
+  }
+  // hardware keys work too (desktop review)
+  addEventListener('keydown', e => {
+    if ($('#sh-kp').hidden) return
+    if (/^\d$/.test(e.key)) { key(e.key); e.preventDefault() }
+    else if (e.key === 'Backspace') { key('del'); e.preventDefault() }
+    else if (e.key === 'Enter' && !$('#kpApply').disabled) $('#kpApply').click()
   })
-  $('#amtDone').onclick = () => hideSheet('amt'); $('#amtX').onclick = () => hideSheet('amt')
 
   const send = () => toast('Prototype: no order is sent to the exchange.')
-  $('#fbBuy').onclick = send; $('#fbSell').onclick = send
+  $('#fbBuy').onclick = () => { const c = calc(price()); toast(`${fb.pos ? 'Add' : 'Buy'} ${sh(c.q)} · margin ${inr(c.margin)}. Prototype: no order is sent.`) }
+  $('#fbSell').onclick = () => {
+    const p = price(), c = calc(p)
+    toast(fb.pos ? `Exit ${sh(fb.pos)} · frees ${inr(fb.pos * p / c.L)} margin. Prototype: no order is sent.` : `Sell ${sh(c.q)} · margin ${inr(c.margin)}. Prototype: no order is sent.`)
+  }
 
   // ---------- Order form (redesign) ----------
   $('#phone').insertAdjacentHTML('beforeend', `
@@ -141,7 +196,7 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
       <div class="fbf-line"><span class="bm">Order type</span><div class="seg subtle bm" id="ffType"><span class="thumb"></span><button class="on" data-v="mkt">Market</button><button data-v="lmt">Limit</button></div></div>
       <label class="fbf-field" id="ffPriceF" hidden><span class="bs sec">Limit price</span><input class="bl num" id="ffPrice" inputmode="decimal"></label>
       <div class="fbf-field fbf-amt">
-        <div class="fbf-amt-top"><span class="bs sec" id="ffInLbl">Trade value</span><button class="bs fbf-link" data-fbunit>Enter quantity instead</button></div>
+        <div class="fbf-amt-top"><span class="bs sec" id="ffInLbl">Amount (margin)</span><button class="bs fbf-link" data-fbunit>Enter quantity instead</button></div>
         <input class="num" id="ffIn" inputmode="numeric" aria-label="Amount in rupees">
         <div class="fbf-chips" id="ffChips"></div>
       </div>
@@ -170,20 +225,20 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
     $('#ffName').textContent = n; $('#ffLtp').textContent = fmt(l)
     const cg = $('#ffChg'); cg.textContent = chgTxt(st.sym); cg.className = 'num ' + (ch >= 0 ? 'pos' : 'neg')
     $('#ffLev').textContent = $('#kvL').textContent = c.L + 'x'; $('#ffLev').hidden = $('#kvL').hidden = c.L <= 1
-    $('#ffInLbl').textContent = fb.input === 'amt' ? 'Trade value' : 'Quantity'
+    $('#ffInLbl').textContent = fb.input === 'amt' ? 'Amount (margin)' : 'Quantity'
     if (document.activeElement !== ffIn) ffIn.value = fb.input === 'amt' ? inr(fb.amt) : st.qty.toLocaleString('en-IN')
     ffIn.setAttribute('aria-label', fb.input === 'amt' ? 'Amount in rupees' : 'Quantity')
-    const chips = fb.input === 'amt' ? [1000, 5000, 10000] : [1, 10, 100]
+    const chips = fb.input === 'amt' ? [500, 1000, 5000] : [1, 10, 100]
     $('#ffChips').innerHTML = chips.map(v => `<button class="chip bs press" data-add="${v}">+${fb.input === 'amt' ? inr(v) : v}</button>`).join('')
     $('#kvQ').textContent = c.q.toLocaleString('en-IN')
     $('#kvV').textContent = inr(c.value, c.value < 1000 ? 2 : 0); $('#kvM').textContent = inr(c.margin, c.margin < 1000 ? 2 : 0); $('#kvF').textContent = inr(FUNDS)
     const short = c.q < 1, over = c.margin > FUNDS
     $('#ffNotice').hidden = !(short || over)
-    $('#ffNoticeTx').textContent = short ? `Amount is below 1 share. Enter at least ${inr(c.min)}.` : `Margin is ${inr(c.margin - FUNDS)} more than your available funds.`
+    $('#ffNoticeTx').textContent = short ? `Amount is below 1 share. Put in at least ${inr(c.min)}.` : `Margin is ${inr(c.margin - FUNDS)} more than your available funds.`
     // Product pills + "why intraday is shut" come from the shared eligibility rules (main.js → eligibility.js)
     const pr = mountProducts($('#ffProd'), $('#ffProdNote')).prod
     $('#ffProdTag').textContent = pr ? pr.label : 'Pick a product'
-    $('#ffFootTx').textContent = !pr ? 'Pick a product above to place this order' : pr.k === 'mis' ? 'Intraday (MIS) · auto square-off at square-off time' : pr.k === 'mtf' ? 'MTF · held with margin funding' : 'Delivery (CNC) · shares go to your demat'
+    $('#ffFootTx').textContent = !pr ? 'Pick a product above to place this order' : pr.k === 'mis' ? 'Intraday (MIS) · auto square-off at square-off time' : 'Delivery (CNC) · shares go to your demat'
     const go = $('#ffGo'); go.className = `bs-btn ${ff.side} press bmb`; go.disabled = short || over || !pr
     go.textContent = short ? (ff.side === 'buy' ? 'Buy' : 'Sell') : `${ff.side === 'buy' ? 'Buy' : 'Sell'} ${c.q.toLocaleString('en-IN')} share${c.q > 1 ? 's' : ''} · ${inr(c.value)}`
   }
@@ -211,8 +266,11 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
   switchInput(fb.def)
 
   return {
-    update() { renderPanel(); renderForm() },
+    update() { renderPanel(); renderForm(); if (!$('#sh-kp').hidden) renderKp() },
     setInput(v) { fb.def = v; switchInput(v) }, // from Order Defaults → Order size
     input: () => fb.def,
+    lev: () => levFor(fb.lev),
+    setSwitchAt(v) { fb.switchAt = v; if (!$('#sh-kp').hidden) renderKp() },
+    setPos(n) { fb.pos = n; renderPanel() },
   }
 }
