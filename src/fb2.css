@@ -81,8 +81,6 @@ body:not(.fb2) .fb-on, body.fb2 .fb-off{display:none!important}
 .od-tabs .tab[hidden]{display:none}
 
 /* Keypad header: the product up front (user, 11 Nov): "Intraday order" / "Delivery order" in h3 display. No badge or square-off line (removed on request). */
-.kp-prod{display:flex;flex-direction:column;align-items:center;gap:var(--sp-8);text-align:center;padding-bottom:var(--sp-4)}
-.kp-prod[hidden]{display:none}
 .of-field .kp-step{width:auto;min-width:160px;max-width:65%} /* grows for big amounts (₹10,00,000) instead of spilling under −/+ */
 .kp-step .kp-val{flex:1 0 auto;padding:0 var(--sp-4)}
 

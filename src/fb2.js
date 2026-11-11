@@ -102,7 +102,6 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
   $('#phone').insertAdjacentHTML('beforeend', `
   <div class="sheet kp" id="sh-kp" hidden role="dialog" aria-label="Order size">
     <div class="kp-top">
-      <div class="kp-prod" id="kpProd"><span class="h3" id="kpProdName"></span></div>
       <!-- Rows follow the live SAHI order form (968): label left, control right — like its "Order type" and "Quantity" rows -->
       <div class="of-field kp-row" id="kpUnitRow"><span class="bm sec">Trade in</span>
         <div class="seg subtle bm kp-unit" id="kpUnit" role="radiogroup" aria-label="Trade in"><span class="thumb"></span><button data-v="qty">Quantity</button><button data-v="amt">&#8377; Amount</button></div></div>
@@ -125,10 +124,8 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
     // Qty / ₹ switch shows here only when the prototype setting puts it on the bar
     const unit = $('#kpUnit'); $('#kpUnitRow').hidden = fb.switchAt !== 'bar'
     unit.querySelectorAll('button').forEach(b => { const on = b.dataset.v === kp.input; b.classList.toggle('on', on); b.setAttribute('aria-checked', on) }); if (fb.switchAt === 'bar') placeThumb(unit)
-    // Product header (user, 11 Nov): this sheet must shout that the order is INTRADAY at the stock's leverage
+    // No product title on this sheet (user, 11 Nov): the labels below say intraday / delivery
     const pr = product(), mis = pr?.k === 'mis'
-    $('#kpProd').hidden = !pr
-    $('#kpProdName').textContent = mis ? 'Intraday order' : 'Delivery order'
     $('#kpLbl').textContent = amt ? (mis ? 'Intraday margin you put in' : 'Amount you invest') : (mis ? 'Shares to trade intraday' : 'Shares')
     $('#kpVal').textContent = kp.qty.toLocaleString('en-IN')
     $('#kpAmtVal').textContent = kp.amt ? Math.round(kp.amt).toLocaleString('en-IN') : ''
