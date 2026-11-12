@@ -69,7 +69,7 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .sheet-title{text-align:center;padding:var(--sp-24) var(--sp-16) var(--sp-16)}
 @media (prefers-reduced-motion:reduce){.sheet{transition:none}.scrim{transition:opacity 120ms ease}.press:active{transform:none}}
 
-/* Trade with SAHI — Figma 10164:12172 (Scalper mode, "Trade with SAHI — Dark") */
+/* Trade with SAHI — Figma 6744:78176 (Base Design System, "Trade with SAHI — Dark") */
 #sh-trade{padding-bottom:var(--sp-24);gap:9px}
 .tw-head{padding:var(--sp-16) var(--sp-8) var(--sp-8)}
 .tw-title{padding:var(--sp-8);text-align:center;font:500 24px/28px var(--display);letter-spacing:-.24px}
@@ -77,16 +77,15 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .tw-row{display:flex;gap:var(--sp-8);align-items:flex-start;padding:0 var(--sp-16)}
 .tw-card{position:relative;flex:1 0 0;min-width:0;display:flex;flex-direction:column;gap:var(--sp-16);align-items:flex-start;text-align:left;
   padding:var(--sp-12);border:var(--bw-hair) solid var(--border-L1);border-radius:var(--r-16);background:var(--surface-L1);color:var(--text-primary)}
-.tw-wide{flex-direction:row;align-items:center;height:90px}
-.tw-wide .tw-lbl{flex:1}
+.tw-wide{flex-direction:row;align-items:flex-start;justify-content:space-between;height:122px;overflow:hidden}
+.tw-wide-l{display:flex;flex-direction:column;gap:var(--sp-16);align-items:flex-start}
+.tw-thumb{position:absolute;top:var(--sp-12);right:22px;width:88px;height:109px;border-radius:var(--r-8) var(--r-8) 0 0;pointer-events:none} /* 108px Figma frame = 88px mock centred with 10px each side */
 .tw-foot{min-height:39px;display:flex;align-items:center;justify-content:space-between;width:100%}
-.tw-chev{font-size:16px;color:var(--icon-secondary)}
 .tw-ic{display:grid;place-items:center;flex:none;border-radius:var(--r-full);background:var(--surface-brand-L1);color:var(--text-inverse-primary)}
 .tw-ic32{width:32px;height:32px;font-size:21.33px}
 .tw-ic24{width:24px;height:24px;font-size:16px}
 .tw-glyph{width:24px;height:24px;display:grid;place-items:center;color:var(--icon-primary)}
 .tw-glyph24{font-size:24px;color:var(--icon-primary)}
-.tw-short{height:97px}
 .tw-badge{position:absolute;top:13px;right:11px;padding:2px 5px;font:500 10px/12px var(--sans)}
 
 /* "New" highlight: Figma inner glow (inset 0 .5 1 white, inset 0 1 6 accent/66), static. A soft outer halo swells 3× when the sheet opens, then fades out so the card rests on the exact Figma state. */
@@ -222,17 +221,6 @@ canvas#chart{position:absolute;inset:0;width:100%;height:100%}
 .dtip-x::before{content:"";position:absolute;inset:-12px} /* 40px touch target around the 16px glyph */
 .dtip-caret{display:block;margin-left:var(--caret-x,16px);color:var(--surface-inverse-L1)}
 @media (prefers-reduced-motion:reduce){.dtip,.dtip.show{transform:none}}
-/* Coach mark on the first stock card (Stocks on the move full page): DLS Tooltip Direction=down, Caret=start — caret on top, grows down out of it. */
-.dtip.down{z-index:6;transform:translateY(-4px) scale(.97)}
-.dtip.down.show{transform:none}
-.dtip.down .dtip-caret{transform:rotate(180deg)}
-.dtip.down.off{opacity:0;pointer-events:none}
-/* custom (no DLS spotlight): a 2px ring that breathes twice around the card the tip points at */
-#swList .coach{z-index:1}
-#swList .coach::before{content:"";position:absolute;inset:var(--sp-4);border:var(--bw-thick) solid var(--border-L2);border-radius:var(--r-12);pointer-events:none;animation:coachRing 1.6s var(--ease-out) 2 both}
-#swList .coach:is(.sc-card,.sa-card)::before{inset:0;border-radius:inherit} /* chart cards: ring traces the card border, never a second box inside it */
-@keyframes coachRing{0%{opacity:0}35%{opacity:1}100%{opacity:.35}}
-@media (prefers-reduced-motion:reduce){.dtip.down,.dtip.down.show{transform:none}#swList .coach::before{animation:none;opacity:.6}}
 .tip .x{font-size:18px;align-self:center;color:var(--text-inverse-primary)}
 
 /* Filter sheet */
@@ -274,12 +262,6 @@ canvas#chart{position:absolute;inset:0;width:100%;height:100%}
 .od-tx{display:flex;flex-direction:column;gap:var(--sp-4)}
 .od-full button{flex:1}
 /* Order size example: "You type" sits in a field-like box, the worked-out values follow on the same row */
-.od-ex{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:var(--sp-4);padding:var(--sp-4);border-radius:var(--r-12);background:var(--surface-L2)}
-.od-ex>div{display:flex;flex-direction:column;gap:var(--sp-4);padding:var(--sp-8);min-width:0}
-.od-ex>div>span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.od-ex-in{background:var(--surface-L1);border-radius:var(--r-8);box-shadow:0 0 0 var(--bw-hair) var(--border-L1)}
-.od-ex-k{display:flex;align-items:center;gap:var(--sp-4)}
-.od-ex-k .lev-badge{height:14px;padding:0 var(--sp-4)} .od-ex-k .lev-badge[hidden]{display:none}
 .toast{position:absolute;left:var(--sp-16);right:var(--sp-16);bottom:170px;z-index:40;background:var(--surface-inverse-L1);color:var(--text-inverse-primary);border-radius:var(--r-12);padding:var(--sp-12) var(--sp-16);opacity:0;transform:translateY(8px);transition:opacity 200ms ease,transform 200ms var(--ease-out);pointer-events:none}
 .toast.show{opacity:1;transform:none}
 
@@ -295,6 +277,14 @@ canvas#chart{position:absolute;inset:0;width:100%;height:100%}
 
 /* ---------- Stocks on the move (home widget + View all) ---------- */
 .scw{position:relative;margin-top:var(--sp-24);border-top:var(--bw-hair) solid var(--border-L1)}
+.scw-sub{display:flex;align-items:center;gap:var(--sp-4)}
+/* Live scanning dot, as in the live app (build 968, seen on the emulator at 11:30 IST): 8px negative-red dot, a 16px slot, with a halo that pulses out and fades */
+.live-dot{position:relative;flex:none;width:16px;height:16px;display:grid;place-items:center}
+.live-dot[hidden]{display:none}
+.live-dot::before{content:"";width:8px;height:8px;border-radius:var(--r-full);background:var(--surface-negative-default)}
+.live-dot::after{content:"";position:absolute;inset:4px;border-radius:var(--r-full);background:var(--surface-negative-default);opacity:0;animation:live-pulse 1.6s var(--ease-out) infinite}
+@keyframes live-pulse{0%{transform:scale(1);opacity:.3}100%{transform:scale(2);opacity:0}}
+@media (prefers-reduced-motion:reduce){.live-dot::after{animation:none;opacity:.2;transform:scale(1.5)}}
 .scw-head{display:flex;justify-content:space-between;align-items:center;padding:var(--sp-24) var(--sp-16) var(--sp-8)}
 .bbtog.full button .lbl{display:inline}
 .bbtog .up{color:var(--icon-positive)} .bbtog .dn{color:var(--icon-negative)}
@@ -380,6 +370,7 @@ canvas#chart{position:absolute;inset:0;width:100%;height:100%}
 
 /* Prototype-only control, outside the phone */
 .demo{display:flex;align-items:center;gap:var(--sp-8);width:100%;justify-content:space-between}
+.demo .seg button{white-space:nowrap}
 .demo select{font:400 14px/16.8px var(--sans);color:var(--text-primary);background:var(--surface-L1);border:var(--bw-hair) solid var(--border-L1);border-radius:var(--r-full);height:32px;padding:0 var(--sp-12)}
 .sc-card:has(.wl:active),.sa-card:has(.wl:active){transform:none}
 
@@ -410,3 +401,12 @@ canvas#chart{position:absolute;inset:0;width:100%;height:100%}
 .cv-ranges{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-12) var(--sp-8);padding:var(--sp-16) var(--sp-16) var(--sp-32)}
 .tr-chip{height:40px;justify-content:center;color:var(--text-secondary)}
 .tr-chip.on{gap:var(--sp-16)}
+
+/* Signal tooltip on the grey target icon (DLS Tooltip, same bubble as the list-icon tip). Flips below with the caret on top at the screen's top edge. */
+.sig-hit{cursor:pointer;outline:none}
+.sig-hit:focus-visible{stroke:var(--border-L2);stroke-width:2}
+#sigTip{z-index:35}
+#sigTip.below{flex-direction:column-reverse}
+#sigTip.below .dtip-caret{transform:rotate(180deg)}
+.sig-btn{position:absolute;width:32px;height:32px;border-radius:var(--r-full);z-index:2}
+.sig-btn[hidden]{display:none}

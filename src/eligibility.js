@@ -26,6 +26,8 @@ export const SESSIONS={
   regular:{name:"",open0:T(9,0),open:T(9,15),sq:T(15,20),sqEarly:T(15,10),close:T(15,30)},
   muhurat:{name:"Muhurat ",open0:T(18,0),open:T(18,15),sq:T(19,5),sqEarly:T(18,55),close:T(19,15)}
 };
+// Home "Intraday scanner" subtitle, as in the live app (build 968 strings): "Live scanning" while the market is open, else "No active scanning".
+export const scanStatus=(min,sk)=>{const s=SESSIONS[sk]; return min>=s.open&&min<s.close?"Live scanning":"No active scanning"};
 export const clockTxt=m=>{const h=Math.floor(m/60)%24, mm=String(Math.floor(m%60)).padStart(2,"0"); return `${h%12||12}:${mm} ${h<12?"AM":"PM"}`};
 
 // Why intraday is shut for this stock right now, or null when it's open.

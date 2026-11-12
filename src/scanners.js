@@ -5,8 +5,8 @@ export const INFO={pvb:["Stocks up 2.5% or more intraday with the volume, VWAP, 
  orb:["Stocks trading above the 09:15–09:30 opening range after the first 5-minute close beyond it broke out on confirming volume and a trending 15-minute ADX.","Stocks trading below the 09:15–09:30 opening range after the first 5-minute close beyond it broke out on confirming volume and a trending 15-minute ADX."]};
 
 export function initScanners(c){
-  const {$,$$,S,SCAN,st,fmt,sign,pct,chgTxt,sorted,enterScalper,openFilter,filterDirty,appliedFilter,inWatch,toggleWatch,openPage}=c;
-  // One-tap watchlist (founder feedback): a bookmark on every card/row. The card itself is a div[role=button] so the bookmark isn't a button inside a button.
+  const {$,$$,S,SCAN,st,fmt,sign,pct,chgTxt,sorted,enterScalper,openFilter,filterDirty,appliedFilter,inWatch,openPage}=c;
+  // Bookmark on every card/row (founder feedback); it opens the Add to watchlist sheet, as in the SAHI app. The card itself is a div[role=button] so the bookmark isn't a button inside a button.
   const wl=k=>`<button class="wl press" data-wl="${k}" aria-pressed="${inWatch(k)}" aria-label="${inWatch(k)?"Remove from":"Add to"} watchlist"><i class="i" aria-hidden="true">${inWatch(k)?"&#xe144;":"&#xe012;"}</i></button>`;
   const sc={scan:"pvb",dir:"bull"}; // Home widget only; the full page is the shared Stocks on the move component in main.js
   const items=()=>appliedFilter()["Relative volume"]==="≥ 10×"?[]:sorted(SCAN[sc.scan][sc.dir]);
@@ -35,7 +35,8 @@ export function initScanners(c){
 ${marks(type,p,x,y,H,col,gid,pts,L)}
 <line x1="${x(L)}" x2="${aw}" y1="${ly}" y2="${ly}" stroke="${col}" stroke-dasharray="4 4"/><circle cx="${x(L)}" cy="${ly}" r="3.5" fill="${col}"/>
 ${range==="1D"?`<polyline points="${bx},${by} ${bx+8},${by-12} ${bx+19},${by-12}" fill="none" stroke="var(--icon-primary)"/><circle cx="${bx}" cy="${by}" r="2.5" fill="var(--icon-primary)"/>
-<circle cx="${bx+28}" cy="${by-12}" r="9" fill="var(--surface-L3)"/><text x="${bx+28}" y="${by-5.5}" text-anchor="middle" font-size="13" font-family="DlsIcons" fill="var(--icon-primary)">&#xe03b;</text>`:""}${ax}</svg>`;
+<circle cx="${bx+28}" cy="${by-12}" r="9" fill="var(--surface-L3)"/><text x="${bx+28}" y="${by-5.5}" text-anchor="middle" font-size="13" font-family="DlsIcons" fill="var(--icon-primary)">&#xe03b;</text>
+<circle class="sig-hit" data-sig="${k}" cx="${bx+28}" cy="${by-12}" r="16" fill="transparent" role="button" tabindex="0" aria-label="Signal details"/>`:""}${ax}</svg>`;
   }
   // Price marks for each chart type. Candles are built from the same close path (open = previous close), so every type tells the same story.
   function marks(type,p,x,y,H,col,gid,pts,L){
@@ -62,7 +63,7 @@ ${range==="1D"?`<polyline points="${bx},${by} ${bx+8},${by-12} ${bx+19},${by-12}
   // Rule: a lone card fills the row (full width, wider chart); two or more split into the 2×2 grid. Called as list.map(gridCard).
   const AXIS={"5D":["5 Nov","7 Nov","10 Nov"],"1M":["13 Oct","27 Oct","10 Nov"],"3M":["Aug","Sep","Oct","Nov"],"1Y":["Dec '25","Apr","Aug","Nov"],"5Y":["2022","2023","2024","2025","2026"]};
   // Heights match prod (SAHI 968 Watchlist chart view: card 264dp, chart + time axis 184dp at 411dp width): wide 340×150, half 160×142.
-  const gridCard=(k,i,all,o)=>{const [n,l]=S[k], wide=!all||all.length===1;return `<div class="sc-card press${wide?" wide":""}" role="button" tabindex="0" data-sym="${k}"><span class="bm nm">${n}</span>${wl(k)}<span class="bm num lt" data-px="${k}">${fmt(l)}</span><span class="bs num ch ${cls(k)}" data-ch="${k}">${chgTxt(k)}</span>${wide?chart(k,340,150,false,o):chart(k,160,142,false,o)}${xAxis(o&&AXIS[o.range]?(wide?AXIS[o.range]:AXIS[o.range].slice(0,3)):wide?["Nov","11:15","13:15","15:15"]:["Nov","11:15","13:15"])}</div>`};
+  const gridCard=(k,i,all,o)=>{const [n,l]=S[k], wide=!all||all.length===1||!!(o&&o.full); /* o.full: the full page's "full width" layout (second tap on the chart icon) */ return `<div class="sc-card press${wide?" wide":""}" role="button" tabindex="0" data-sym="${k}"><span class="bm nm">${n}</span>${wl(k)}<span class="bm num lt" data-px="${k}">${fmt(l)}</span><span class="bs num ch ${cls(k)}" data-ch="${k}">${chgTxt(k)}</span>${wide?chart(k,340,150,false,o):chart(k,160,142,false,o)}${xAxis(o&&AXIS[o.range]?(wide?AXIS[o.range]:AXIS[o.range].slice(0,3)):wide?["Nov","11:15","13:15","15:15"]:["Nov","11:15","13:15"])}</div>`};
   const hideTips=()=>$$(".sc-tip").forEach(x=>x.hidden=true);
 
   function render(){
@@ -80,10 +81,7 @@ ${range==="1D"?`<polyline points="${bx},${by} ${bx+8},${by-12} ${bx+19},${by-12}
     $("#scwGrid").innerHTML=it.length?it.slice(0,4).map(gridCard).join(""):empty;
     $("#scwAll").hidden=!it.length;
     // The picked scanner becomes the list the chart's stock strip slides through, and what "Stocks on the move" opens on.
-    $$("#scwGrid [data-wl]").forEach(b=>b.onclick=e=>{e.stopPropagation(); const k=b.dataset.wl, on=toggleWatch(k);
-      // update in place (no re-render, so scroll and the chart SVGs stay put)
-      $$(`[data-wl="${k}"]`).forEach(x=>{x.classList.toggle("on",on); x.setAttribute("aria-pressed",on); x.setAttribute("aria-label",(on?"Remove from":"Add to")+" watchlist"); x.firstElementChild.innerHTML=on?"&#xe144;":"&#xe012;";
-        if(!matchMedia("(prefers-reduced-motion:reduce)").matches) x.firstElementChild.animate([{transform:"scale(.8)"},{transform:"scale(1)"}],{duration:200,easing:"cubic-bezier(.23,1,.32,1)"})})});
+    $$("#scwGrid [data-wl]").forEach(b=>b.onclick=e=>{e.stopPropagation(); c.openAddWL(b.dataset.wl)}); // bookmark → Add to watchlist sheet
     $$("#scwGrid [role=button]").forEach(r=>r.onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&e.target===r){e.preventDefault(); r.click()}});
     $$("#scwGrid [data-sym]").forEach(r=>r.onclick=()=>{st.group=it; st.src="scan"; st.scan=sc.scan; st.dir=sc.dir; c.setBack("#home"); enterScalper(r.dataset.sym)});
   }
@@ -93,6 +91,49 @@ ${range==="1D"?`<polyline points="${bx},${by} ${bx+8},${by-12} ${bx+19},${by-12}
   // View all opens the shared Stocks on the move page on the scanner picked here.
   $("#scwAll").onclick=()=>{hideTips(); st.src="scan"; st.scan=sc.scan; st.dir=sc.dir; openPage()};
   render();
+  // ---------- signal tooltip: the grey target icon on a chart marks where the scanner fired ----------
+  // DLS Tooltip (tap, close glyph; no hover, this is a touch app): "<scanner> detected" over "<n> min ago · Bullish". Opens on tap or
+  // Enter, and as a nudge on Trade → Stocks Scalper (sigNudge below). No close glyph: it hides itself after 3s, or on a tap outside, scroll or Esc. Shows every time (no "seen" memory). The minutes are sample values, stable per
+  // stock and counting up while the page is open.
+  const t0=Date.now(), phone=$("#phone");
+  phone.insertAdjacentHTML("beforeend",`<div class="dtip" id="sigTip" role="tooltip" hidden><div class="dtip-bubble"><div class="dtip-tx"><span class="dtip-title" id="sigTitle"></span><span class="dtip-desc" id="sigDesc"></span></div></div><svg class="dtip-caret" width="16" height="8" viewBox="0 0 16 8" aria-hidden="true"><path d="M0 0h16l-6.6 6.6a2 2 0 0 1-2.8 0L0 0z" fill="currentColor"/></svg></div>`);
+  const tip=$("#sigTip"); let tipFor=null, hideT=0, autoT=0; const TIP_MS=3000; // auto-dismiss after 3s
+  const minsAgo=k=>{let h=0; for(const ch of k) h=(h*33+ch.charCodeAt(0))>>>0; return 2+h%13+Math.floor((Date.now()-t0)/6e4)};
+  const reduce=()=>matchMedia("(prefers-reduced-motion:reduce)").matches;
+  function sigInfo(hit){ // which scanner is this card showing? Home keeps its own pick (sc); the Stocks on the move sheet and page share st
+    const home=!!hit.closest("#scwGrid"), key=home?sc.scan:st.scan, dir=home?sc.dir:st.dir;
+    return {name:SCAN[key]?.name||"Signal", dir:dir==="bear"?"Bearish":"Bullish"};
+  }
+  function placeTip(hit){
+    const p=phone.getBoundingClientRect(), b=hit.getBoundingClientRect(), cx=b.left+b.width/2-p.left;
+    tip.style.width="max-content"; tip.style.maxWidth=(p.width-32)+"px"; const w=tip.offsetWidth, h=tip.offsetHeight; // hugs its text; no close glyph, it dismisses itself
+    // Prefer below the icon so it never covers the card's name and price; flip above only when there's no room under it
+    const above=b.bottom-p.top+4+h>p.height-8&&b.top-p.top-h-4>=8, left=Math.max(16,Math.min(p.width-16-w,cx-w/2));
+    tip.style.left=left+"px"; tip.style.top=(above?b.top-p.top-h-4:b.bottom-p.top+4)+"px";
+    tip.classList.toggle("below",!above);
+    tip.style.setProperty("--caret-x",Math.max(16,Math.min(w-32,cx-left-8))+"px");
+    tip.style.transformOrigin=`${cx-left}px ${above?"100%":"0"}`;
+  }
+  function openTip(hit){
+    const k=hit.dataset.sig; if(!k) return; const i=sigInfo(hit), n=minsAgo(k); tipFor=hit; clearTimeout(hideT);
+    $("#sigTitle").textContent=`${i.name} detected`; $("#sigDesc").textContent=`${n} min ago · ${i.dir}`;
+    hit.setAttribute("aria-describedby","sigTip"); tip.hidden=false; clearTimeout(autoT); autoT=setTimeout(closeTip,TIP_MS); placeTip(hit); void tip.offsetWidth; tip.classList.add("show");
+  }
+  function closeTip(){ clearTimeout(autoT); if(!tipFor) return; tipFor.removeAttribute("aria-describedby"); tipFor=null; tip.classList.remove("show"); hideT=setTimeout(()=>{ if(!tipFor) tip.hidden=true },reduce()?0:180) }
+  document.addEventListener("click",e=>{
+    const hit=e.target.closest?.(".sig-hit");
+    if(hit){ e.stopPropagation(); e.preventDefault(); return hit===tipFor?closeTip():openTip(hit) } // don't open the stock; the icon explains itself
+    if(tipFor&&!e.target.closest("#sigTip")) closeTip();
+  },true);
+  document.addEventListener("keydown",e=>{
+    const hit=e.target.closest?.(".sig-hit");
+    if(hit&&(e.key==="Enter"||e.key===" ")){ e.preventDefault(); e.stopPropagation(); hit===tipFor?closeTip():openTip(hit) }
+    else if(e.key==="Escape") closeTip();
+  },true);
+  document.addEventListener("scroll",e=>{ if(tipFor&&(e.target===document||e.target.contains?.(tipFor))) closeTip() },{capture:true,passive:true}); // only scrolling that moves the icon
+  addEventListener("resize",closeTip);
+  // The nudge: the first scanner chart on the screen points out its target icon by opening this same tooltip by itself.
+  render.sigNudge=root=>{ const hit=[...root.querySelectorAll(".sig-hit")].find(h=>h.dataset.sig&&h.getBoundingClientRect().width); if(hit&&!tipFor) openTip(hit) };
   render.chart=chart; render.xAxis=xAxis; render.gridCard=gridCard; // shared with Stocks on the move and the Watchlist chart view
   return render;
 }

@@ -55,11 +55,12 @@ body:not(.fb2) .fb-on, body.fb2 .fb-off{display:none!important}
 .kp-step-wrap{min-width:0} .kp-step-wrap>span{min-width:0}
 .kp-step{flex:none;width:168px;height:48px}
 .kp-val{flex:1;min-width:0;text-align:center;font:400 18px/21.6px var(--sans);color:var(--text-primary);white-space:nowrap}
-.kp-kv{display:flex;flex-direction:column;gap:var(--sp-8);background:var(--surface-L2);border-radius:var(--r-12);padding:var(--sp-12) var(--sp-16)}
+.kp-card{background:var(--surface-L2);border-radius:var(--r-12)}
+.kp-kv{display:flex;flex-direction:column;gap:var(--sp-8);padding:var(--sp-12) var(--sp-16)}
 .kp-kv>div{display:flex;justify-content:space-between;gap:var(--sp-8)}
 .kp-kv>div.em{font-weight:500}
 /* info strip: full-width grey band above the keypad, like the live order form's "Market is closed…" line */
-.kp-strip{padding:var(--sp-12) var(--sp-16);background:var(--surface-L2);color:var(--text-secondary)}
+.kp-strip{margin:0 var(--sp-16);padding:var(--sp-12) 0;border-top:var(--bw-hair) solid var(--border-L1);color:var(--text-secondary)} /* inside .kp-card, under a divider */
 .kp-strip[hidden]{display:none}
 .kp-strip.neg{color:var(--text-negative)}
 .kp-pad{display:grid;grid-template-columns:repeat(3,1fr);padding:0 var(--sp-16)}
@@ -72,6 +73,9 @@ body:not(.fb2) .fb-on, body.fb2 .fb-off{display:none!important}
 
 /* bar: size is a button that opens the keypad sheet; summary line (margin) is tappable too */
 .fb-in{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;color:var(--text-primary)}
+.fb-in .bx{white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis} /* caption under the size, as on the live commodity bar */
+.fb-in .neg{color:var(--text-negative)}
+.fb-sum[hidden]{display:none}
 .fb-step .fb-in{display:flex;flex:1;width:auto;height:44px;border-radius:var(--r-full);justify-content:center}
 .fb-sum{display:flex;align-items:center;gap:var(--sp-4);max-width:100%;justify-content:center;padding:0}
 .fb-sum .lev-badge[hidden]{display:none}

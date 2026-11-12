@@ -286,5 +286,5 @@ export function initWatchlist(c) {
     if (n === 'x') toast('Not captured from the app in this prototype.')
   })
   render()
-  return { open, render }
+  return { open, render, openCreate }
 }
