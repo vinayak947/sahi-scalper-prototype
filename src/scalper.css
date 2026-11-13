@@ -140,16 +140,21 @@ canvas#chart{position:absolute;inset:0;width:100%;height:100%}
 .navpanel{display:flex;align-items:center;gap:var(--sp-8);padding:var(--sp-8) var(--sp-12) var(--sp-12)}
 /* Stock strip: the list you came from. Snaps the centred stock; settling on one loads its chart. */
 .navcount{flex:none;min-width:24px;color:var(--text-tertiary);text-align:center}
-.pills{position:relative;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;touch-action:pan-x;
+.pillswrap{position:relative;flex:1;min-width:0}
+/* The selection: the stroked pill (same design as before), fixed at the centre of the strip; the symbols slide under it. */
+.pill-cap{position:absolute;left:50%;top:50%;height:32px;min-width:48px;transform:translate(-50%,-50%);border-radius:var(--r-full);border:var(--bw-emph) solid var(--border-L2);pointer-events:none;transition:width 120ms var(--ease-out)}
+.pills{position:relative;z-index:1;width:100%;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;touch-action:pan-x;
   -webkit-mask-image:linear-gradient(90deg,transparent,#000 var(--sp-24),#000 calc(100% - var(--sp-24)),transparent);mask-image:linear-gradient(90deg,transparent,#000 var(--sp-24),#000 calc(100% - var(--sp-24)),transparent)}
 .pills::-webkit-scrollbar{display:none}
+.pills.dragging{cursor:grabbing;user-select:none}.pills.dragging .pill{pointer-events:none}
 .pills .track{display:flex;gap:var(--sp-8);width:max-content}
 .pill{flex:none;height:32px;border-radius:var(--r-full);padding:0 var(--sp-12);display:flex;align-items:center;gap:6px;color:var(--text-tertiary);border:var(--bw-emph) solid transparent;scroll-snap-align:center;
-  transition:border-color 150ms ease,color 150ms ease,transform 160ms var(--ease-out)}
+  transition:border-color 90ms ease,color 90ms ease,transform 160ms var(--ease-out)}
 .pill .ch{opacity:.6;transition:opacity 150ms ease}
 .pill.near{color:var(--text-primary)}
 .pill.near .ch,.pill.on .ch{opacity:1}
-.pill.on{background:transparent;border-color:var(--border-L2);color:var(--text-primary)}
+.pills.scrolling .pill.on:not(.near){color:var(--text-tertiary)}
+.pill.on{color:var(--text-primary)} /* no outline of its own: the fixed capsule is the selection */
 #btnList{width:40px;height:40px;border:0;background:var(--surface-L3);font-size:20px}
 .obtn{width:24px;height:24px;border-radius:var(--r-full);border:var(--bw-hair) solid var(--border-L1);display:grid;place-items:center;font-size:16px;flex:none;background:var(--surface-L1)}
 .orderpanel{margin-top:var(--sp-8);border-radius:var(--r-16) var(--r-16) 0 0;padding:var(--sp-8) var(--sp-8) var(--sp-8);padding-bottom:max(8px,env(safe-area-inset-bottom,0px));transition:transform 280ms var(--ease-drawer)}

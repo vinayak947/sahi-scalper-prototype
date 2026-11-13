@@ -222,8 +222,9 @@ $("#btnClose").onclick=()=>{stopNudge(); listTip.hide(); $("#scalper").hidden=tr
 $("#btnList").onclick=()=>{listTip.hide(); openSom("sheet"); showSheet("switch")};
 
 // ---------- stock strip: slide through the list without leaving the chart ----------
-// The strip snaps the centred chip. While a finger drags it, the chip under the centre lights up with a light haptic tick;
-// when the scroll settles, that stock's chart loads and slides in from the side it came from.
+// Same as the SAHI app (checked on SAHI 968, 13 Nov): the selection is a grey capsule FIXED at the centre of the strip; the symbols slide
+// underneath it. The symbol under the capsule darkens with a light haptic tick as you drag; the chart changes when you let go
+// (the nearest symbol snaps into the capsule). Tapping a symbol slides it into the capsule and loads it.
 const pillsEl=$("#pills"), track=$("#pillTrack");
 const reduceMotion=()=>matchMedia("(prefers-reduced-motion:reduce)").matches;
 let pillKey="", nearSym=null, userScroll=false, settleT=0;
@@ -241,28 +242,45 @@ function renderPills(force){
   track.querySelectorAll(".pill").forEach(p=>{const on=p.dataset.sym===st.sym; p.classList.toggle("on",on); p.classList.remove("near"); p.setAttribute("aria-selected",on)});
   nearSym=st.sym;
   $("#navCount").textContent=st.group.length>1?`${i+1}/${st.group.length}`:"";
-  centrePill(force?"instant":"smooth");
+  centrePill(force?"instant":"smooth"); fitCap();
 }
 function centrePill(behavior){
   const on=track.querySelector(".pill.on"); if(!on||!pillsEl.clientWidth) return;
   pillsEl.scrollTo({left:on.offsetLeft+on.offsetWidth/2-pillsEl.clientWidth/2,behavior:reduceMotion()?"instant":behavior});
 }
-function centredSym(){
+function centredPill(){
   const mid=pillsEl.scrollLeft+pillsEl.clientWidth/2; let best=null,d=1e9;
   track.querySelectorAll(".pill").forEach(p=>{const dd=Math.abs(p.offsetLeft+p.offsetWidth/2-mid); if(dd<d){d=dd;best=p}});
-  return best&&best.dataset.sym;
+  return best;
 }
-pillsEl.addEventListener("pointerdown",()=>{userScroll=true; stopNudge()});
-pillsEl.addEventListener("touchstart",()=>{userScroll=true; stopNudge()},{passive:true});
+const centredSym=()=>centredPill()?.dataset.sym;
+// the fixed capsule takes the width of the symbol under it
+const pillCap=$("#pillCap");
+function fitCap(){ const p=centredPill(); if(p) pillCap.style.width=p.offsetWidth+"px" }
+// `held` = a finger / the mouse is down on the strip. While held it stays a live slider: no settle, however slowly or briefly it moves.
+let held=false;
+pillsEl.addEventListener("pointerdown",()=>{userScroll=true; held=true; stopNudge()});
+pillsEl.addEventListener("touchstart",()=>{userScroll=true; held=true; stopNudge()},{passive:true});
+["pointerup","pointercancel","touchend","touchcancel"].forEach(t=>addEventListener(t,()=>{ if(!held) return; held=false; clearTimeout(settleT); settleT=setTimeout(settle,160) },{passive:true})); // after release: momentum, then snap
 pillsEl.addEventListener("wheel",()=>{userScroll=true; stopNudge()},{passive:true});
 pillsEl.addEventListener("scroll",()=>{
-  if(userScroll){const k=centredSym(); if(k&&k!==nearSym){nearSym=k;
-    track.querySelectorAll(".pill").forEach(p=>p.classList.toggle("near",p.dataset.sym===k&&k!==st.sym));
-    navigator.vibrate&&navigator.vibrate(6)}}
+  if(userScroll){const k=centredSym(); pillsEl.classList.add("scrolling");
+    track.querySelectorAll(".pill").forEach(p=>p.classList.toggle("near",p.dataset.sym===k)); // only the symbol under the capsule is dark
+    if(k&&k!==nearSym){nearSym=k; navigator.vibrate&&navigator.vibrate(6)}}
+  fitCap();
   clearTimeout(settleT); settleT=setTimeout(settle,160); // fallback for browsers without scrollend
 },{passive:true});
-pillsEl.addEventListener("scrollend",()=>{clearTimeout(settleT); settle()});
-function settle(){ if(!userScroll) return; userScroll=false; const k=centredSym(); if(k&&k!==st.sym) loadSymbol(k); else renderPills() }
+pillsEl.addEventListener("scrollend",()=>{ if(held) return; clearTimeout(settleT); settle() });
+// Mouse drag (touch scrolls natively): drag the strip like a finger would, release snaps the nearest chip to the centre.
+let mdrag=null, justDragged=false;
+pillsEl.addEventListener("pointerdown",e=>{ if(e.pointerType==="mouse"&&e.button===0) mdrag={x:e.clientX,sl:pillsEl.scrollLeft,moved:false} });
+addEventListener("pointermove",e=>{ if(!mdrag) return; const dx=e.clientX-mdrag.x;
+  if(!mdrag.moved){ if(Math.abs(dx)<4) return; mdrag.moved=true; pillsEl.style.scrollSnapType="none"; pillsEl.classList.add("dragging") }
+  pillsEl.scrollLeft=mdrag.sl-dx });
+addEventListener("pointerup",()=>{ if(!mdrag) return; const moved=mdrag.moved; mdrag=null;
+  held=false; if(moved){ justDragged=true; setTimeout(()=>justDragged=false); pillsEl.style.scrollSnapType=""; pillsEl.classList.remove("dragging"); clearTimeout(settleT); settle() } });
+pillsEl.addEventListener("click",e=>{ if(justDragged){ e.stopPropagation(); e.preventDefault() } },true);
+function settle(){ if(held||!userScroll) return; userScroll=false; pillsEl.classList.remove("scrolling"); const k=centredSym(); if(k&&k!==st.sym) loadSymbol(k); else renderPills() }
 
 // Chart and stock name enter from the side of the stock they came from: next stock from the right, previous from the left.
 function slideChart(dir){
