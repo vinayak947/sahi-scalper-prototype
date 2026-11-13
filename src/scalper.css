@@ -2,6 +2,8 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
 html,body{height:100%}
+/* Zoom lock for the prototype (user, 13 Nov): pan only, no pinch-zoom and no double-tap-zoom. The order bar was zooming on fast − / + taps and pinches while the chart (touch-action:none) never did. Scoped to the page via touch-action, not the viewport meta, so browser/OS zoom settings still work. */
+html,body{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%}
 body{background:var(--surface-recessed);color:var(--text-primary);font-family:var(--sans);margin:0;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px;
   display:flex;flex-direction:column;align-items:center;gap:var(--sp-12)}

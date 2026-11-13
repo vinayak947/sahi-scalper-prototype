@@ -8,6 +8,8 @@ import {initLive} from './live.js'
 import {resolve,scanStatus} from './eligibility.js'
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+// iOS Safari: pinch fires gesture* events before touch-action is honoured on some versions; cancel them so the page never zooms (chart already ignored them).
+["gesturestart","gesturechange","gestureend"].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
 // ---------- data (captured from the app on 9 Nov 2026; rows marked s:1 are sample fill-ins) ----------
 const S={
  DATAPATTNS:["Data Patterns (India)",4032.00,328.00],IREDA:["Indian Renew. Energy Dev",120.00,8.67],PNB:["Punjab National Bank",132.25,6.70],
