@@ -274,12 +274,14 @@ canvas#chart{position:absolute;inset:0;width:100%;height:100%}
 
 /* Guided tour */
 .tour-hole{position:absolute;z-index:50;border-radius:var(--r-16);box-shadow:0 0 0 3px var(--border-L2),0 0 0 9999px var(--surface-tr-overlay-L1);transition:all 260ms var(--ease-out);pointer-events:none}
-.tour-tip{position:absolute;z-index:51;left:var(--sp-24);right:var(--sp-24);background:var(--surface-inverse-L1);color:var(--text-inverse-primary);border-radius:var(--r-16);padding:var(--sp-16) var(--sp-16) var(--sp-16) var(--sp-16);display:flex;flex-direction:column;gap:var(--sp-12);transition:top 260ms var(--ease-out)}
+.tour-tip{position:absolute;z-index:51;left:50%;width:min(286px,calc(100% - 24px));margin-left:calc(min(286px,calc(100% - 24px))/-2);background:var(--surface-inverse-L1);color:var(--text-inverse-primary);border-radius:var(--r-16);border:var(--bw-hair) solid var(--border-inverse-L3);padding:var(--sp-16);display:flex;flex-direction:column;gap:var(--sp-12);transition:top 260ms var(--ease-out)}
+.tour-tip.r{left:auto;right:33px;margin-left:0} /* steps 2 and 4: the bubble sits toward the right edge, under/over the target, as in the app */
 .tour-tip .hd{display:flex;justify-content:space-between;align-items:center}
+.tour-tip .hd .bl{font-weight:500}
 .tour-tip .ft{display:flex;align-items:center;gap:var(--sp-8);margin-top:var(--sp-8)}
 .tour-tip .ft .ct{margin-right:auto;color:var(--text-inverse-secondary)}
-.tbtn{height:36px;border-radius:var(--r-full);padding:0 var(--sp-16);background:var(--surface-L1);color:var(--text-primary)}
-.tbtn.ghost{background:none;color:var(--text-inverse-primary);border:var(--bw-hair) solid var(--border-inverse-L4)}
+.tbtn{height:32px;border-radius:var(--r-full);padding:0 var(--sp-12);background:var(--surface-L1);color:var(--text-primary)}
+.tbtn.ghost{background:none;color:var(--text-inverse-primary);border:var(--bw-emph) solid var(--border-inverse-L4)}
 :focus-visible{outline:2px solid var(--border-L2);outline-offset:2px}
 
 /* ---------- Stocks on the move (home widget + View all) ---------- */
@@ -417,3 +419,6 @@ canvas#chart{position:absolute;inset:0;width:100%;height:100%}
 #sigTip.below .dtip-caret{transform:rotate(180deg)}
 .sig-btn{position:absolute;width:32px;height:32px;border-radius:var(--r-full);z-index:2}
 .sig-btn[hidden]{display:none}
+
+/* Tour intro language switch: 44 tall as in the SAHI app (2 + 40 + 2) */
+.lang-seg button{height:40px}

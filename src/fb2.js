@@ -17,12 +17,12 @@ const BACKSPACE = ''
 
 export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast, bindSeg, placeThumb, price, levOf, product, barNotice, mountProducts, setQty, enterScalper }) {
   const fb = {
-    def: 'qty',        // the saved choice: 'qty' | 'amt'
-    input: 'qty',      // what the bar and form use right now (the form can switch it for one order)
+    def: 'amt',        // the saved choice: 'qty' | 'amt'. ₹ Amount by default (Figma 10439:13626, 17 Nov)
+    input: 'amt',      // what the bar and form use right now (the form can switch it for one order)
     amt: 1000,         // ₹ the user puts in (margin). Starts at the chart's minimum (see minAmt), never a fixed number.
     amtSym: null,      // the stock this amount belongs to; a different chart starts again from its own minimum
     lev: null,         // picked intraday leverage; null = the stock's highest
-    switchAt: 'defaults', // prototype setting (default: in Order defaults): where Qty / ₹ is switched ('defaults' | 'bar')
+    switchAt: 'bar',   // prototype setting: where Qty / ₹ is switched ('defaults' | 'bar'). Default 'bar': the switcher sits in the keypad sheet
     pos: 0,            // prototype setting: shares already bought in this stock (for the exit case)
   }
   const inr = (n, dp) => '₹' + (dp ?? (n < 100 ? 2 : 0) ? n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Math.round(n).toLocaleString('en-IN'))
@@ -30,6 +30,9 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
   const inrK = n => { const u = n >= 1e7 ? [1e7, 'Cr'] : n >= 1e5 ? [1e5, 'L'] : n >= 1e3 ? [1e3, 'K'] : null
     return u ? '₹' + (Math.floor(n / u[0] * 10) / 10).toString() + u[1] : inr(n) }
   const sh = n => `${n.toLocaleString('en-IN')} share${n === 1 ? '' : 's'}`
+  const plu = n => `${n.toLocaleString('en-IN')} ${n === 1 ? 'Share' : 'Shares'}` // PM copy: "1 Share", "99 Shares"
+  const fmt2 = n => inr(n, 2)
+  const shA = n => n === 1 ? '1 Share' : sh(n) // ₹ Amount copy as in Figma: "1 Share", "99 shares"
 
   // leverage is never picked (prod parity): it's the product's leverage for the open stock
   const maxLev = () => levOf(st.sym)
@@ -53,10 +56,12 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
     <div class="op-row2 fb-row">
       <div class="col"><button class="bs-btn buy press" id="fbBuy"><span class="bs" id="fbBuyTop">Buy at</span><span class="bmb" id="fbBuyLbl">Mkt</span></button><span class="bx num fb-m" id="fbMBuy"></span></div>
       <div class="col">
-        <div class="stepper fb-step">
-          <button id="fbMinus" aria-label="Decrease"><i class="i">&#xe09a;</i></button>
-          <button class="fb-in" id="fbInBtn"><span id="fbIn" class="bmb num"></span><span class="bx ter num" id="fbInSub"></span></button>
-          <button id="fbPlus" aria-label="Increase"><i class="i">&#xe0bc;</i></button>
+        <!-- Quantity: DLS Stepper field, Size=large, outlined (Figma 10493:178366): − value + with "Value ₹4K" under the number.
+             ₹ Amount: the same control as a plain outlined box (no − / +). Tapping the number opens the sheet in both. -->
+        <div class="fb-ctl" id="fbCtl">
+          <button id="fbMinus" class="press" aria-label="Decrease quantity"><i class="i">&#xe09a;</i></button>
+          <button class="fb-box press" id="fbInBtn"><span id="fbIn" class="bmb num"></span><span class="bx num" id="fbInSub"></span></button>
+          <button id="fbPlus" class="press" aria-label="Increase quantity"><i class="i">&#xe0bc;</i></button>
         </div>
         <button class="fb-sum press" id="fbSumBtn" aria-label="Change order size"><span class="bx fb-sumtx num" id="fbSum" aria-live="polite"></span></button>
       </div>
@@ -72,10 +77,11 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
     // Quantity mode: the quantity, and its trade value underneath. Amount mode: the amount, and the shares it buys underneath.
     const v = $('#fbIn'); v.textContent = amt ? inr(fb.amt) : st.qty.toLocaleString('en-IN'); v.style.fontSize = v.textContent.length > 9 ? '12px' : ''
     const short = c.q < 1, pos = fb.pos, sub = $('#fbInSub')
-    sub.textContent = short ? `Min ${inr(c.min)}` : amt ? sh(c.q) : `Value ${inrK(c.value)}`; sub.classList.toggle('neg', short)
+    sub.textContent = short ? (amt ? `Min ${inr(c.min)}` : 'Min 1 Share') : amt ? plu(c.q) : `Value ${inrK(c.value)}`; sub.classList.toggle('neg', short)
     $('#fbInBtn').setAttribute('aria-label', amt ? `Amount ${inr(fb.amt)}, buys ${short ? 'less than 1 share' : sh(c.q)}, change` : `Quantity ${st.qty}, trade value ${inr(c.value)}, change`)
+    $('#fbCtl').classList.toggle('amt', amt); $('#fbMinus').hidden = $('#fbPlus').hidden = amt // − / + only in Quantity
+    $('#fbMinus').disabled = !amt && st.qty <= 1
     $('#fbInBtn').title = short ? `Min ${inr(c.min)} for 1 share at ${c.L}x` : `Trade value ${inr(c.value)}`
-    $('.fb-step').classList.toggle('amt', amt) // amount mode: just the value, no − / + steppers
     // Under the stepper only what the caption doesn't say: the product and its leverage, worded as in the SAHI app ("Intraday: 5X"). Margin sits under each button, because Buy and Sell need different margin.
     const s = $('#fbSum'); s.textContent = !short && c.L > 1 ? `Intraday: ${c.L}X` : ''; $('#fbSumBtn').hidden = !s.textContent
     // With an open position (as in the SAHI app) Buy becomes Add and Sell becomes Exit.
@@ -89,72 +95,77 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
     $('#fbSell').disabled = (short && !pos) || !product()
   }
   const setAmt = v => { fb.amt = Math.max(0, Math.min(1e7, Math.round(v) || 0)); fb.amtSym = st.sym; renderPanel(); renderForm() }
-  const step = d => fb.input === 'amt' ? setAmt((Math.round(fb.amt / AMT_STEP) + d) * AMT_STEP) : (setQty(st.qty + d), renderForm())
-  $('#fbMinus').onclick = () => step(-1); $('#fbPlus').onclick = () => step(1)
+  $('#fbMinus').onclick = () => (setQty(st.qty - 1), renderForm()); $('#fbPlus').onclick = () => (setQty(st.qty + 1), renderForm())
   $('#fbInBtn').onclick = () => openKp(); $('#fbSumBtn').onclick = () => openKp()
 
-  function switchInput(v) {
-    // carry the size across so switching doesn't change the order
-    const c = calc(price())
-    if (v === 'qty' && fb.input === 'amt' && c.q >= 1) setQty(c.q)
-    if (v === 'amt' && fb.input === 'qty') { fb.amt = minAmt(); fb.amtSym = st.sym } // starts at the chart's minimum, not at what the quantity cost
+  function switchInput(v, keep) {
+    // carry the size across so switching doesn't change the order (keep: the keypad sheet flips the mode and keeps both typed values as they are)
+    if (!keep) {
+      const c = calc(price())
+      if (v === 'qty' && fb.input === 'amt' && c.q >= 1) setQty(c.q)
+      if (v === 'amt' && fb.input === 'qty') { fb.amt = minAmt(); fb.amtSym = st.sym } // starts at the chart's minimum, not at what the quantity cost
+    }
     fb.input = v
     $$('[data-fbunit]').forEach(b => b.textContent = v === 'amt' ? 'Enter quantity instead' : 'Enter amount instead')
     renderPanel(); renderForm()
   }
 
   // ---------- Order size keypad sheet (opened from the bar) ----------
+  // Layout from the PM's 1-Tap prototype (17 Nov): "Enter Amount ⇕" + leverage badge, a big number with a caret (selected on open, so typing
+  // replaces it), an Order value card that opens a breakdown, one note line, Apply, then the keypad. Colours, type and shapes are DLS tokens.
   $('#phone').insertAdjacentHTML('beforeend', `
   <div class="sheet kp" id="sh-kp" hidden role="dialog" aria-label="Order size">
-    <div class="kp-top">
-      <!-- Rows follow the live SAHI order form (968): label left, control right — like its "Order type" and "Quantity" rows -->
-      <div class="of-field kp-row" id="kpUnitRow"><span class="bm sec">Trade in</span>
-        <div class="seg subtle bm kp-unit" id="kpUnit" role="radiogroup" aria-label="Trade in"><span class="thumb"></span><button data-v="qty">Quantity</button><button data-v="amt">&#8377; Amount</button></div></div>
-      <div class="of-field kp-row kp-step-wrap"><span class="bm sec" id="kpLbl"></span>
-        <!-- Quantity: DLS Stepper field (filled pill, − value +) -->
-        <div class="stepper kp-step" id="kpStep"><button id="kpMinus" class="press" aria-label="Decrease"><i class="i">&#xe09a;</i></button><output class="num kp-val" id="kpVal" aria-live="polite"></output><button id="kpPlus" class="press" aria-label="Increase"><i class="i">&#xe0bc;</i></button></div>
-        <!-- ₹ Amount: DLS Number field (outlined, ₹ prefix, right-aligned, no step buttons), shown focused like the live Trigger price box -->
-        <div class="kp-numf" id="kpNumf" role="textbox" aria-label="Amount in rupees"><span class="kp-numf-pre">&#8377;</span><output class="num kp-numf-val" id="kpAmtVal" aria-live="polite"></output><span class="kp-caret" aria-hidden="true"></span></div>
+    <div class="kq-top">
+      <!-- Stacked and centred: "Enter Amount ⇕" on top, the DLS field below it -->
+      <div class="kq-head">
+        <button class="kq-swap bm press" id="kpSwap"><span class="sec">Enter</span><span class="kq-word" id="kpWord">Amount</span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M4.29988 8.83353C4.43321 8.72242 4.58877 8.68464 4.76655 8.7202C4.93543 8.73797 5.06877 8.8202 5.16655 8.96686C5.93099 10.0024 6.55321 10.7802 7.03321 11.3002C7.49988 11.7891 7.8221 12.0335 7.99988 12.0335C8.17766 12.0335 8.49988 11.7891 8.96655 11.3002C9.44655 10.7802 10.0688 10.0024 10.8332 8.96686C10.9354 8.8202 11.0688 8.73797 11.2332 8.7202C11.411 8.68464 11.5665 8.72242 11.6999 8.83353C11.8465 8.93575 11.931 9.06908 11.9532 9.23353C11.9843 9.41131 11.9443 9.57353 11.8332 9.7202C10.9665 10.898 10.2177 11.7802 9.58655 12.3669C8.9421 12.9802 8.41321 13.2869 7.99988 13.2869C7.59099 13.2869 7.0621 12.9802 6.41321 12.3669C5.7821 11.7802 5.03321 10.898 4.16655 9.7202C4.05543 9.57353 4.01766 9.41131 4.05321 9.23353C4.07099 9.06908 4.15321 8.93575 4.29988 8.83353ZM4.16655 6.28686C5.03321 5.10908 5.7821 4.22464 6.41321 3.63353C7.0621 3.01131 7.59099 2.7002 7.99988 2.7002C8.41321 2.7002 8.9421 3.01131 9.58655 3.63353C10.2177 4.22464 10.9665 5.10908 11.8332 6.28686C11.9443 6.42908 11.9843 6.58908 11.9532 6.76686C11.931 6.93575 11.8465 7.06908 11.6999 7.16686C11.5665 7.27797 11.411 7.31797 11.2332 7.28686C11.0688 7.26464 10.9354 7.1802 10.8332 7.03353C10.0688 5.99797 9.44655 5.2202 8.96655 4.7002C8.49988 4.20242 8.17766 3.95353 7.99988 3.95353C7.8221 3.95353 7.49988 4.20242 7.03321 4.7002C6.55321 5.2202 5.93099 5.99797 5.16655 7.03353C5.06877 7.1802 4.93543 7.26464 4.76655 7.28686C4.58877 7.31797 4.43321 7.27797 4.29988 7.16686C4.15321 7.06908 4.07099 6.93575 4.05321 6.76686C4.01766 6.58908 4.05543 6.42908 4.16655 6.28686Z"/></svg></button>
+      <div class="kq-hero">
+        <!-- ₹ Amount: DLS Number field, Size=xLarge, State=focused (144 default, stretched to 200), value centred -->
+        <div class="kq-numf" id="kpNumf" role="textbox" aria-label="Amount in rupees"><output class="num" id="kpAmtVal" aria-live="polite"></output><span class="kp-caret" aria-hidden="true"></span></div>
+        <!-- Quantity: DLS Stepper field, Size=large, outlined (Figma 10493:178366): 144 × 48 pill, − value + -->
+        <div class="kq-step" id="kpStep"><button id="kpMinus" class="press" aria-label="Decrease quantity"><i class="i">&#xe09a;</i></button><div class="kq-stepv"><output class="num" id="kpVal" aria-live="polite"></output></div><button id="kpPlus" class="press" aria-label="Increase quantity"><i class="i">&#xe0bc;</i></button></div>
       </div>
-      <div class="kp-card"><!-- breakdown + its note in one card, a divider between them -->
-        <div class="kp-kv bs" id="kpKv" aria-live="polite"></div>
-        <div class="bs kp-strip" id="kpNote" hidden></div>
+      </div>
+      <!-- DLS Card (filled, compact): label / value rows; the note sits under a Divider inside the card, like the Margin check in the Figma frames -->
+      <!-- DLS Card (filled, compact): three label / value rows (order value, price per share, trade value); the note sits under a Divider inside the card -->
+      <div class="kq-card">
+        <div class="kq-r bs"><span id="kpOvL"></span><b class="num" id="kpOvV"></b></div>
+        <div class="kq-r bs"><span>Price per share</span><b class="num" id="kpPx"></b></div>
+        <div class="kq-r bs"><span class="kq-l">Trade value<span class="lev-badge" id="kpTvLev">5X</span></span><b class="num" id="kpTv"></b></div>
+        <div class="kq-msg" id="kpMsg" hidden><div class="kq-div"></div><div class="bs" id="kpNote" aria-live="polite"></div></div>
       </div>
     </div>
-    <div class="kp-pad" id="kpPad">${['1','2','3','4','5','6','7','8','9','00','0','del'].map(k => `<button class="press ${k === 'del' ? 'i' : 'h4'}" data-k="${k}"${k === 'del' ? ' aria-label="Delete"' : ''}>${k === 'del' ? BACKSPACE : k}</button>`).join('')}</div>
     <div class="kp-foot"><button class="btn primary bm press" id="kpApply">Apply</button></div>
+    <div class="kp-pad" id="kpPad">${['1','2','3','4','5','6','7','8','9','00','0','del'].map(k => `<button class="press ${k === 'del' ? 'i' : 'h4'}" data-k="${k}"${k === 'del' ? ' aria-label="Delete"' : ''}>${k === 'del' ? BACKSPACE : k}</button>`).join('')}</div>
   </div>`)
-  const kp = { input: 'qty', qty: 1, amt: 1000, lev: null, fresh: true }
+  const kp = { input: 'amt', qty: 1, amt: 1000, lev: null, fresh: false, seen: { amt: true, qty: true } } // fresh = replace on the first key. Off: keys edit the shown number in place (the DLS Number field has no "selected" look)
   const kpSize = () => kp.input === 'amt' ? kp.amt : kp.qty
   function renderKp() {
-    const p = price(), L = levFor(kp.lev), amt = kp.input === 'amt', c = calcWith(p, kp.input, kpSize(), L), short = c.q < 1
-    // Qty / ₹ switch shows here only when the prototype setting puts it on the bar
-    const unit = $('#kpUnit'); $('#kpUnitRow').hidden = fb.switchAt !== 'bar'
-    unit.querySelectorAll('button').forEach(b => { const on = b.dataset.v === kp.input; b.classList.toggle('on', on); b.setAttribute('aria-checked', on) }); if (fb.switchAt === 'bar') placeThumb(unit)
-    // No product title on this sheet (user, 11 Nov): the labels below say intraday / delivery
-    const pr = product(), mis = pr?.k === 'mis'
-    $('#kpLbl').textContent = amt ? (mis ? 'Intraday margin you put in' : 'Amount you invest') : (mis ? 'Shares to trade intraday' : 'Shares')
-    $('#kpVal').textContent = kp.qty.toLocaleString('en-IN')
-    $('#kpAmtVal').textContent = kp.amt ? Math.round(kp.amt).toLocaleString('en-IN') : ''
-    $('#kpStep').hidden = amt; $('#kpNumf').hidden = !amt // Quantity → stepper; ₹ Amount → number field, no −/+ (user, 11 Nov)
-    // margin first: what you put in → × leverage → trade value → whole shares
-    const row = (k, v, cls = '') => `<div class="${cls}"><span class="sec">${k}</span><span class="num">${v}</span></div>`
-    $('#kpKv').innerHTML = amt
-      ? (mis ? row('Your intraday margin', inr(kp.amt)) + row(`Trade value with ${L}x intraday leverage`, inr(kp.amt * L)) : row('You invest', inr(kp.amt)))
-        + row('Shares at ' + inr(p, 2), short ? 'Below 1' : sh(c.q), 'em')
-      : row('Trade value', inr(c.value)) + row(mis ? `Intraday margin at ${L}x` : 'You pay (full value)', inr(c.margin), 'em')
-    const n = $('#kpNote'), over = c.margin > FUNDS
-    n.classList.toggle('neg', short || over)
-    n.hidden = false
-    if (short) n.textContent = amt ? `Put in at least ${inr(c.min)} for 1 share${mis ? ` at ${L}x intraday` : ''}.` : 'Enter at least 1 share.'
-    else if (over) n.textContent = `Margin is ${inr(c.margin - FUNDS)} more than your available funds (${inr(FUNDS)}).`
-    else if (amt && c.left >= 0.5) n.textContent = `Uses ${inr(c.margin)}. ${inr(c.left)} is left over, less than 1 share. Never goes over ${inr(kp.amt)} as the price moves.`
-    else if (barNotice?.()) n.textContent = barNotice().text // market state (AMO / pre-open), like the live order form's strip
-    else n.hidden = true
+    const p = price(), L = levFor(kp.lev), amt = kp.input === 'amt', n = kpSize() || 0, c = calcWith(p, kp.input, n, L), short = c.q < 1
+    const swap = fb.switchAt === 'bar', word = amt ? 'Amount' : 'Quantity'
+    $('#sh-kp').classList.toggle('amt', amt)
+    // "Enter Amount ⇕" is the Qty / ₹ switch (when the prototype setting puts it here; otherwise it is a plain label)
+    $('#kpSwap').disabled = !swap; $('#kpWord').textContent = word
+    $('#kpSwap').setAttribute('aria-label', swap ? `Enter ${word}. Switch to ${amt ? 'quantity' : 'amount'}` : `Enter ${word}`)
+    $('#kpTvLev').hidden = L <= 1; $('#kpTvLev').textContent = `${L}X`
+    // the input: DLS Number field for ₹ Amount, DLS Stepper field for Quantity
+    $('#kpNumf').hidden = !amt; $('#kpStep').hidden = amt
+    $('#kpAmtVal').textContent = inr(n, 0)
+    $('#kpVal').textContent = n.toLocaleString('en-IN')
+    // card: order value = the margin you actually put in; trade value = shares × price
+    $('#kpOvL').textContent = amt ? `Order value (${sh(c.q)})` : 'Order value'
+    $('#kpOvV').textContent = fmt2(c.margin); $('#kpTv').textContent = fmt2(c.value); $('#kpPx').textContent = fmt2(p)
+    // one note line, under a divider in the card
+    const over = c.margin > FUNDS; let tx = '', neg = false
+    if (short) { neg = n > 0; tx = n === 0 ? (amt ? 'Enter how much you want to put in' : 'Enter number of shares') : amt ? `${inr(n)} is not enough for 1 share. Min ${fmt2(p / L)}.` : 'Enter at least 1 share.' }
+    else if (over) { neg = true; tx = amt ? `Insufficient funds add ${inr(c.margin - FUNDS)}` : `Margin is ${inr(c.margin - FUNDS)} more than your available funds (${inr(FUNDS)}).` }
+    else if (amt && c.left >= 0.005) tx = `${fmt2(c.left)} left over, less than 1 share`
+    else if (barNotice?.()) tx = barNotice().text // market state (AMO / pre-open), like the live order form's strip
+    $('#kpMsg').hidden = !tx; $('#kpNote').textContent = tx; $('#kpNote').classList.toggle('neg', neg)
     $('#kpApply').disabled = short
   }
   function openKp() {
-    Object.assign(kp, { input: fb.input, qty: st.qty, amt: fb.amt, lev: levFor(fb.lev), fresh: true })
+    Object.assign(kp, { input: fb.input, qty: st.qty, amt: fb.amt, lev: levFor(fb.lev), fresh: false, seen: { amt: fb.input === 'amt', qty: fb.input === 'qty' } })
     renderKp(); showSheet('kp')
   }
   const kpSet = v => { if (kp.input === 'amt') kp.amt = Math.max(0, Math.min(1e7, v)); else kp.qty = Math.max(0, Math.min(99999, v)); renderKp() }
@@ -165,17 +176,23 @@ export function initFb2({ $, $$, S, st, fmt, chgTxt, showSheet, hideSheet, toast
     kpSet(+(cur + k))
   }
   $('#kpPad').addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (b) key(b.dataset.k) })
-  $('#kpMinus').onclick = () => { kp.fresh = false; kp.input === 'amt' ? kpSet((Math.round(kp.amt / AMT_STEP) - 1) * AMT_STEP) : kpSet(kp.qty - 1) }
-  $('#kpPlus').onclick = () => { kp.fresh = false; kp.input === 'amt' ? kpSet((Math.round(kp.amt / AMT_STEP) + 1) * AMT_STEP) : kpSet(kp.qty + 1) }
-  $('#kpUnit').addEventListener('click', e => {
-    const b = e.target.closest('button'); if (!b || b.dataset.v === kp.input) return
-    const c = calcWith(price(), kp.input, kpSize(), levFor(kp.lev)) // carry the size across
-    if (b.dataset.v === 'qty') kp.qty = Math.max(1, c.q); else kp.amt = minAmt() // ₹ Amount opens at the chart's minimum: nothing to type
-    kp.input = b.dataset.v; kp.fresh = true
-    // The switch itself needs no Apply: the bar changes straight away (the sheet stays open only to fine-tune the size)
-    if (fb.switchAt === 'bar') { fb.def = kp.input; switchInput(kp.input); kp.qty = st.qty; kp.amt = fb.amt }
+  $('#kpMinus').onclick = () => { kp.fresh = false; kpSet(Math.max(1, kp.qty - 1)) }
+  $('#kpPlus').onclick = () => { kp.fresh = false; kpSet(kp.qty + 1) }
+  function kpSwitchTo(v) {
+    if (v === kp.input) return
+    // Each mode keeps what was typed in it, so flipping Amount ⇄ Quantity never resets either one.
+    // A mode visited for the first time since the sheet opened is seeded from the other: shares carry across, ₹ Amount starts at the minimum for 1 share.
+    if (!kp.seen[v]) {
+      const c = calcWith(price(), kp.input, kpSize(), levFor(kp.lev))
+      if (v === 'qty') kp.qty = Math.max(1, c.q); else kp.amt = minAmt()
+      kp.seen[v] = true
+    }
+    kp.input = v; kp.fresh = false
+    // The switch itself needs no Apply: the bar changes mode straight away (the sheet stays open only to fine-tune the size)
+    if (fb.switchAt === 'bar') { fb.def = kp.input; switchInput(kp.input, true) }
     renderKp()
-  })
+  }
+  $('#kpSwap').onclick = () => kpSwitchTo(kp.input === 'amt' ? 'qty' : 'amt')
   $('#kpApply').onclick = () => {
     if (fb.switchAt === 'bar' && kp.input !== fb.input) { fb.def = kp.input; switchInput(kp.input) }
     if (kp.input === 'amt') setAmt(kp.amt); else { setQty(kp.qty); renderForm() }

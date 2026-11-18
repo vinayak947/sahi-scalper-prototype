@@ -42,9 +42,12 @@ const chgTxt=k=>{const c=S[k][2];return `${sign(c)} (${pct(k).toFixed(2)}%)`};
 // ---------- sheets ----------
 const scrim=$("#scrim"); let open=[];
 function showSheet(id){const el=$("#sh-"+id); el.hidden=false; scrim.hidden=false; requestAnimationFrame(()=>requestAnimationFrame(()=>{el.classList.add("show");scrim.classList.add("show")})); open.push(id); el.querySelectorAll(".seg").forEach(placeThumb); scrim.style.zIndex=20+open.length*2-1; el.style.zIndex=20+open.length*2;}
+let tourGoing=false, coachT=0, coachId=0; // coach marks: see coachStart() below
 function hideSheet(id,cb){const el=$("#sh-"+id); if(!el||el.hidden) return cb&&cb(); el.classList.remove("show"); open=open.filter(x=>x!==id);
   if(!open.length) scrim.classList.remove("show"); else scrim.style.zIndex=20+open.length*2-1;
-  setTimeout(()=>{el.hidden=true; if(!open.length) scrim.hidden=true; cb&&cb()},matchMedia("(prefers-reduced-motion:reduce)").matches?0:300);}
+  setTimeout(()=>{el.hidden=true; if(!open.length) scrim.hidden=true; cb&&cb();
+    if(id==="tour"&&!tourGoing&&!$("#scalper").hidden) coachStart(700)}, // intro skipped / dismissed (not "Start tour"): nudge, then tooltip
+    matchMedia("(prefers-reduced-motion:reduce)").matches?0:300);}
 const top=()=>open[open.length-1];
 scrim.onclick=()=>{const t=top(); if(t) closeTop(t)};
 function closeTop(t){ if(t==="switch") return hideSheet("switch",()=>{ if($("#scalper").hidden) enterScalper(st.sym)}); hideSheet(t)}
@@ -211,11 +214,13 @@ $("#fApply").onclick=()=>{if(fsMode==="sort"){st.sort=sortDraft}else{fApplied=JS
 function enterScalper(sym){
   $("#home").hidden=true; $("#scalper").hidden=false;
   if(!st.group.includes(sym)) st.group=st.src==="hold"?Object.keys(HOLD):[sym];
-  loadSymbol(sym); requestAnimationFrame(()=>{placeThumb($("#modeSeg"));sizeCanvas();renderPills(true);nudgeStrip();listTip.schedule()});
+  loadSymbol(sym); requestAnimationFrame(()=>{placeThumb($("#modeSeg"));sizeCanvas();renderPills(true);coachCancel();
+    // As in the SAHI app: the guided-tour intro sheet opens with the Scalper, every time (coach marks always repeat)
+    showSheet("tour"); placeThumb($("#langSeg"))});
 }
 let scBack="#home";
 // Back goes to where the stock was picked; the scanners page keeps its scroll and brings the last-viewed stock into view.
-$("#btnClose").onclick=()=>{stopNudge(); listTip.hide(); $("#scalper").hidden=true; $(scBack).hidden=false;
+$("#btnClose").onclick=()=>{coachCancel(); $("#scalper").hidden=true; $(scBack).hidden=false;
   if(scBack==="#scanAll"){mountSom("page"); const r=$(`#swList [data-sym="${st.sym}"]`); r&&r.scrollIntoView({block:"nearest"})}
   scBack="#home"};
 // The list icon on the chart opens the same Stocks on the move component in the bottom sheet.
@@ -294,26 +299,26 @@ function slideChart(dir){
 // so people always see that it slides. No "seen" memory: it plays on every open, from every entry point.
 // If a sheet or the tour is up when it's due, it waits for that to close. Touching the strip cancels it.
 let nudgeT=0, nudgeAnim=null, nudgeChart=null;
-function nudgeStrip(delay=700){
-  if(st.group.length<2) return;
+function nudgeStrip(delay=700,done){
+  if(st.group.length<2) return done&&done();
   clearTimeout(nudgeT);
   nudgeT=setTimeout(()=>{
     if($("#scalper").hidden) return;
-    if(open.length||!$("#tourTip").hidden) return nudgeStrip(300); // wait for the sheet / tour to close
+    if(open.length||!$("#tourTip").hidden) return nudgeStrip(300,done); // wait for the sheet / tour to close
     if(nudgeAnim) nudgeAnim.cancel();
     // Hint toward the neighbour that comes next (the one before it, at the end of the list). The strip travels most of the way to that chip
     // (distance measured from the chips, so it reads the same for first, middle and last stocks) and the chip lights up as it arrives.
     const ps=[...track.querySelectorAll(".pill")], i=st.group.indexOf(st.sym), atEnd=i===ps.length-1, nb=ps[atEnd?i-1:i+1], cur=ps[i];
-    if(!nb||!cur) return;
+    if(!nb||!cur) return done&&done();
     const mid=p=>p.offsetLeft+p.offsetWidth/2, d=Math.round((mid(cur)-mid(nb))*.7), clear=()=>nb.classList.remove("near"); // sign: toward nb
     nb.classList.add("near");
-    if(reduceMotion()){ setTimeout(clear,900); return } // no travel; the lit neighbour is the hint
+    if(reduceMotion()){ setTimeout(()=>{clear(); done&&done()},900); return } // no travel; the lit neighbour is the hint
     nudgeAnim=track.animate([
       {transform:"translateX(0)",easing:"cubic-bezier(.77,0,.175,1)"},
       {transform:`translateX(${d}px)`,offset:.42},
       {transform:`translateX(${d}px)`,offset:.56,easing:"cubic-bezier(.23,1,.32,1)"},
       {transform:"translateX(0)"}],{duration:1500});
-    nudgeAnim.onfinish=nudgeAnim.oncancel=clear;
+    nudgeAnim.onfinish=()=>{clear(); done&&done()}; nudgeAnim.oncancel=clear;
     // The chart drifts the same way, in step with the strip but a shorter way, so it reads as "this slides too".
     const dc=Math.max(-28,Math.min(28,Math.round(d*.3)));
     if(nudgeChart) nudgeChart.cancel();
@@ -322,6 +327,22 @@ function nudgeStrip(delay=700){
       {transform:`translateX(${dc}px)`,offset:.42},
       {transform:`translateX(${dc}px)`,offset:.56,easing:"cubic-bezier(.23,1,.32,1)"},
       {transform:"translateX(0)"}],{duration:1500});
+  },delay);
+}
+// ---------- coach marks, one at a time ----------
+// Order on opening the Scalper (same for a new user and a returning one; no "seen" memory):
+//   1. tour intro sheet ("Learn How to use Intraday Stock Scalper")
+//   2a. Skip / dismissed  -> short pause -> slide nudge -> list-icon tooltip
+//   2b. Start tour        -> the 5 steps -> Done or close -> longer pause -> slide nudge -> list-icon tooltip
+// Rule: they never overlap. The nudge and the tooltip wait while any sheet or the tour is up, and the tooltip only starts once the nudge
+// has finished. Leaving the chart cancels the chain.
+function coachCancel(){ coachId++; clearTimeout(coachT); stopNudge(); listTip.hide() }
+function coachStart(delay){
+  const id=++coachId; clearTimeout(coachT); stopNudge(); listTip.hide();
+  coachT=setTimeout(function go(){
+    if(id!==coachId||$("#scalper").hidden) return;
+    if(open.length||!$("#tourTip").hidden){ coachT=setTimeout(go,300); return } // a sheet or the tour is up: wait
+    nudgeStrip(0,()=>{ if(id===coachId&&!$("#scalper").hidden) listTip.schedule(500) }); // tooltip only after the nudge is done
   },delay);
 }
 function stopNudge(){clearTimeout(nudgeT); if(nudgeAnim){nudgeAnim.cancel(); nudgeAnim=null} if(nudgeChart){nudgeChart.cancel(); nudgeChart=null}}
@@ -493,7 +514,7 @@ Object.assign(fbHook,initFb2({$,$$,S,st,fmt,chgTxt,showSheet,hideSheet,toast,bin
 $$("[data-sheet]").forEach(b=>b.onclick=()=>showSheet(b.dataset.sheet));
 bindSeg($("#pnlSeg"),v=>{$("#pnlEmpty").textContent=v==="total"?"You have not taken any positions or scalper trades today":"You have not taken any stock scalper trades today"; $("#pnlProtect").hidden=v!=="total"});
 $("#openDefaults").onclick=()=>hideSheet("more",()=>{odDraft=[...odSaved]; odDraft[3]=fbHook.input(); odSaved[3]=odDraft[3]; odTab("1"); $('.od-tabs [data-odt="2"]').hidden=$("#demoSwitch .on").dataset.v==="bar"; renderOD(); showSheet("defaults")});
-let odSaved=["m","m","mis","qty"], odDraft=["m","m","mis","qty"]; // [1-tap buy/sell, exit, product, order size]
+let odSaved=["m","m","mis","amt"], odDraft=["m","m","mis","amt"]; // [1-tap buy/sell, exit, product, order size]
 function renderOD(){[1,2,3,4].forEach(i=>{const seg=$("#odSeg"+i); seg.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.v===odDraft[i-1])); placeThumb(seg)});
   $("#odLimit").hidden=odDraft[0]!=="l"; $("#odDesc1").hidden=odDraft[0]==="l"; $("#odDesc2").hidden=odDraft[1]==="l";
   $("#odDesc3").textContent=odDraft[2]==="mis"?"Uses intraday leverage. Stocks without it go as Delivery; when intraday is shut, 1-Tap waits until it opens.":"Buys and sells as Delivery."; renderODSize(); $("#odApply").disabled=odDraft.join()===odSaved.join()}
@@ -581,26 +602,28 @@ function syncWlIcons(k){ const on=inWatch(k);
   $$(`[data-wl="${k}"]`).forEach(x=>{ const was=x.classList.contains("on"); x.classList.toggle("on",on); x.setAttribute("aria-pressed",on); x.firstElementChild.innerHTML=on?"&#xe144;":"&#xe012;";
     if(was!==on&&!matchMedia("(prefers-reduced-motion:reduce)").matches) x.firstElementChild.animate([{transform:"scale(.8)"},{transform:"scale(1)"}],{duration:200,easing:"cubic-bezier(.23,1,.32,1)"})}) }
 
-// guided tour (5 steps, copy from the app)
+// guided tour (5 steps, copied from the SAHI app on the emulator, 17 Nov).
+// [target, title, body, tip below|above the target, gap to target, tip side, Previous shown, hole radius, hole padding]
+// The app shows Previous only on steps 2 and 3 (steps 1, 4: Next only; step 5: Done only), so that is copied as is.
 const TOUR=[
- ["#chartCard","Stock Chart","Track the chart of any stock that you want to trade intraday (MIS) with leverage.","below"],
- ["#btnList","Access all your stocks here","Your scanners, watchlists and holdings, all in one list.","above"],
- ["#navPanel","Slide between stocks","Slide left or right to move through your list. The chart loads the stock you stop on.","above"],
- ["#chartTools","Customize your Charts","Select time interval, add indicators or customize chart type here.","below"],
- ["#orderPanel","1-Tap or Trade from Charts","1-Tap to send a market or limit order based on your defaults or drag price line on the chart to set limit or trigger price.","above"]
+ ["#chartCard","Stock Chart","Track the chart of any stock that you want to trade intraday (MIS) with leverage.","below",2,"c",false,16,0],
+ ["#btnList","Stock List Selection","Select the list of stocks to quickly navigate in. Choose between Watchlist and Pre defined Scanners.","above",30,"r",true,999,6],
+ [".pillswrap","Stock Navigation Panel","Scroll left and right to navigate between stocks and quickly load charts.","above",30,"c",true,12,0],
+ [".sym-tools .ivl","Customize your Charts","Select time interval, add indicators or customize chart type here.","below",16,"r",false,12,0],
+ ["#orderPanel","1-Tap or Trade from Charts","1-Tap to send a market or limit order based on your defaults or drag price line on the chart to set limit or trigger price.","above",13,"c",false,16,0]
 ];
 let tStep=0;
 $("#openTour").onclick=()=>hideSheet("more",()=>showSheet("tour"));
-$("#startTour").onclick=()=>hideSheet("tour",()=>{tStep=0; $("#tourHole").hidden=false; $("#tourTip").hidden=false; tourGo()});
+$("#startTour").onclick=()=>{tourGoing=true; coachCancel(); hideSheet("tour",()=>{tStep=0; $("#tourHole").hidden=false; $("#tourTip").hidden=false; tourGo()})};
 function tourGo(){
-  const [sel,t,b,pos]=TOUR[tStep], ph=$("#phone").getBoundingClientRect(), r=$(sel).getBoundingClientRect(), pad=sel==="#btnList"?6:0;
-  const hole=$("#tourHole"); Object.assign(hole.style,{left:r.left-ph.left-pad+"px",top:r.top-ph.top-pad+"px",width:r.width+pad*2+"px",height:r.height+pad*2+"px",borderRadius:sel==="#btnList"?"999px":"16px"});
+  const [sel,t,b,pos,gap,side,prev,rad,pad]=TOUR[tStep], ph=$("#phone").getBoundingClientRect(), r=$(sel).getBoundingClientRect();
+  const hole=$("#tourHole"); Object.assign(hole.style,{left:r.left-ph.left-pad+"px",top:r.top-ph.top-pad+"px",width:r.width+pad*2+"px",height:r.height+pad*2+"px",borderRadius:rad+"px"});
   $("#ttTitle").textContent=t; $("#ttBody").textContent=b; $("#ttCount").textContent=`${tStep+1} of ${TOUR.length}`;
-  $("#ttPrev").hidden=tStep===0; $("#ttNext").textContent=tStep===TOUR.length-1?"Done":"Next";
-  const tip=$("#tourTip"); tip.style.visibility="hidden"; tip.style.top="0px";
-  requestAnimationFrame(()=>{const th=tip.offsetHeight; let y=sel==="#chartCard"?r.bottom-ph.top-th-24:pos==="below"?r.bottom-ph.top+12:r.top-ph.top-th-12-pad; y=Math.max(12,Math.min(y,ph.height-th-12)); tip.style.top=y+"px"; tip.style.visibility="visible"; $("#ttNext").focus({preventScroll:true})});
+  $("#ttPrev").hidden=!prev; $("#ttNext").textContent=tStep===TOUR.length-1?"Done":"Next";
+  const tip=$("#tourTip"); tip.classList.toggle("r",side==="r"); tip.style.visibility="hidden"; tip.style.top="0px";
+  requestAnimationFrame(()=>{const th=tip.offsetHeight; let y=pos==="below"?r.bottom-ph.top+pad+gap:r.top-ph.top-pad-th-gap; y=Math.max(12,Math.min(y,ph.height-th-12)); tip.style.top=y+"px"; tip.style.visibility="visible"; $("#ttNext").focus({preventScroll:true})});
 }
-function endTour(){$("#tourHole").hidden=true;$("#tourTip").hidden=true}
+function endTour(){$("#tourHole").hidden=true;$("#tourTip").hidden=true; tourGoing=false; coachStart(1200)} // tour done: a longer breath, then nudge, then tooltip
 $("#ttNext").onclick=()=>{if(tStep===TOUR.length-1) return endTour(); tStep++; tourGo()};
 $("#ttPrev").onclick=()=>{tStep--; tourGo()};
 $("#ttClose").onclick=endTour;
