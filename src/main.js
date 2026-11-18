@@ -212,10 +212,15 @@ $("#fApply").onclick=()=>{if(fsMode==="sort"){st.sort=sortDraft}else{fApplied=JS
 
 // ---------- scalper ----------
 function enterScalper(sym){
+  // Landing = the Scalper wasn't open yet (coming from Home, a scanner, the watchlist...). Picking another stock from the list sheet while
+  // already inside also comes through here, but that is only a stock change: no walkthrough, no nudge, no tooltip.
+  const landing=$("#scalper").hidden;
   $("#home").hidden=true; $("#scalper").hidden=false;
   if(!st.group.includes(sym)) st.group=st.src==="hold"?Object.keys(HOLD):[sym];
-  loadSymbol(sym); requestAnimationFrame(()=>{placeThumb($("#modeSeg"));sizeCanvas();renderPills(true);coachCancel();
-    // As in the SAHI app: the guided-tour intro sheet opens with the Scalper, every time (coach marks always repeat)
+  loadSymbol(sym); requestAnimationFrame(()=>{placeThumb($("#modeSeg"));sizeCanvas();renderPills(true);
+    if(!landing) return;
+    coachCancel();
+    // As in the SAHI app: the guided-tour intro sheet opens when you land on the Scalper, every time (coach marks always repeat)
     showSheet("tour"); placeThumb($("#langSeg"))});
 }
 let scBack="#home";
@@ -331,7 +336,7 @@ function nudgeStrip(delay=700,done){
 }
 // ---------- coach marks, one at a time ----------
 // Order on opening the Scalper (same for a new user and a returning one; no "seen" memory):
-//   1. tour intro sheet ("Learn How to use Intraday Stock Scalper")
+//   1. tour intro sheet ("Learn how to use intraday stock scalper")
 //   2a. Skip / dismissed  -> short pause -> slide nudge -> list-icon tooltip
 //   2b. Start tour        -> the 5 steps -> Done or close -> longer pause -> slide nudge -> list-icon tooltip
 // Rule: they never overlap. The nudge and the tooltip wait while any sheet or the tour is up, and the tooltip only starts once the nudge
