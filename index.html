@@ -4,16 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>SAHI Stock Scalper</title>
-    <link rel="icon" href="/sahi-scalper-prototype/assets/logo.png" />
-    <script type="module" crossorigin src="/sahi-scalper-prototype/assets/index-Dw1t2X3S.js"></script>
-    <link rel="stylesheet" crossorigin href="/sahi-scalper-prototype/assets/index-SdnmBMjX.css">
+    <link rel="icon" href="/stock-scalper/assets/logo.png" />
+    <script type="module" crossorigin src="/stock-scalper/assets/index-DiMbtDKN.js"></script>
+    <link rel="stylesheet" crossorigin href="/stock-scalper/assets/index-20WiFlbC.css">
   </head>
   <body>
 <div class="phone" id="phone">
   <!-- HOME -->
   <section class="screen" id="home">
     <div class="home-head">
-      <div class="logo"><img src="/sahi-scalper-prototype/assets/logo.png" alt="SAHI"></div>
+      <div class="logo"><img src="/stock-scalper/assets/logo.png" alt="SAHI"></div>
       <div class="search bm"><i class="i" style="font-size:18px">&#xe30a;</i>Search SAHI</div>
       <div class="circ"><i class="i">&#xe064;</i></div>
       <div class="circ"><i class="i">&#xe378;</i></div>
@@ -122,7 +122,7 @@
           <span class="limittag bx num" id="limitTag">13.76</span>
         </div>
         <button class="reset" id="resetBtn" hidden aria-label="Reset chart"><i class="i">&#xe0c6;</i></button>
-        <span class="wm"><img src="/sahi-scalper-prototype/assets/logo_fg_s.png" alt=""></span>
+        <span class="wm"><img src="/stock-scalper/assets/logo_fg_s.png" alt=""></span>
       </div>
       <div class="navpanel" id="navPanel">
         <span class="navcount bx num" id="navCount" hidden></span><!-- "3/7" counter removed from the strip (not needed); kept hidden so main.js can still write to it -->
@@ -152,7 +152,7 @@
     <div class="tw-head"><div class="tw-title">Trade with SAHI</div></div>
     <div class="tw-list">
       <!-- Figma 6744:78176 (Base Design System, Trade with SAHI — Dark): Options Scalper (full width) · Stocks Scalper (NEW) | Options Seller · Stocks Scanners | AI Stock Signals -->
-      <div class="tw-row"><div class="tw-card tw-wide"><span class="tw-wide-l"><span class="tw-ic tw-ic32"><i class="i" aria-hidden="true">&#xe050;</i></span><span class="tw-lbl bmb">Options Scalper</span></span><img class="tw-thumb" src="/sahi-scalper-prototype/assets/tw_options_scalper.svg" alt="" width="88" height="109"></div></div>
+      <div class="tw-row"><div class="tw-card tw-wide"><span class="tw-wide-l"><span class="tw-ic tw-ic32"><i class="i" aria-hidden="true">&#xe050;</i></span><span class="tw-lbl bmb">Options Scalper</span></span><img class="tw-thumb" src="/stock-scalper/assets/tw_options_scalper.svg" alt="" width="88" height="109"></div></div>
       <div class="tw-row">
         <button class="tw-card tw-new press" id="openStockScalper"><span class="badge-new tw-badge">NEW</span><span class="tw-ic tw-ic24"><i class="i" aria-hidden="true">&#xe3cd;</i></span><span class="tw-foot"><span class="bmb">Stocks<br>Scalper</span></span></button>
         <div class="tw-card"><span class="tw-glyph"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x=".625" y=".625" width="14.75" height="14.75" rx="4.708" stroke="currentColor" stroke-width="1.25"/><path d="M0 11.005h4.326a.23.23 0 0 0 .224-.168l1.652-5.674a.23.23 0 0 1 .224-.168h3.327a.23.23 0 0 1 .22.155l2.029 5.7a.23.23 0 0 0 .22.155H16" stroke="currentColor" stroke-width="1.25"/></svg></span><span class="tw-foot"><span class="bmb">Options<br>Seller</span></span></div>
@@ -310,9 +310,9 @@
     <option value="r:922">3:22 PM · after square-off</option>
     <option value="r:960">4:00 PM · market closed</option>
   </select>      </label>
-      <!-- Where Qty / ₹ Amount is switched: Order Defaults → Order size, or the keypad sheet on the order bar -->
-      <div class="demo bs"><span class="sec" id="demoSwitchLbl">Qty / ₹ switch</span>
-        <div class="seg subtle bm" id="demoSwitch" role="radiogroup" aria-labelledby="demoSwitchLbl"><span class="thumb"></span><button role="radio" aria-checked="false" data-v="defaults">1-Tap defaults</button><button class="on" role="radio" aria-checked="true" data-v="bar">Order bar</button></div></div>
+      <!-- Variant: how you move through the list of stocks. Horizontal = the strip under the chart slides sideways. Vertical = swipe the chart up / down like a reel. Top bar, strip and order bar stay as they are. -->
+      <div class="demo bs"><span class="sec" id="demoStripLbl">Chart scroll</span>
+        <div class="seg subtle bm" id="demoStrip" role="radiogroup" aria-labelledby="demoStripLbl"><span class="thumb"></span><button role="radio" aria-checked="false" data-v="h">Horizontal</button><button class="on" role="radio" aria-checked="true" data-v="v">Vertical</button></div></div>
       <label class="demo bs"><span class="sec">Open position</span>
         <select id="demoPos" autocomplete="off"><option value="0" selected>None</option><option value="10">Bought 10 shares</option></select></label>
     </div>
